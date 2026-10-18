@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>矩阵庭院 · 给她一套会自己出门的生活</title>
+<meta name="description" content="矩阵庭院：给 QQ Agent 装上一套「她自己会出门旅行」的生活模组。异世界与现实之间往返，寄明信片、带特产、邀旅伴、布置庭院。">
+<style>
+  :root{
+    --paper:#fbfaf7; --ink:#1b1d21; --muted:#6d7280; --line:#e6e2d9;
+    --teal:#2f6f6a; --teal-soft:#e8f0ee; --brass:#b08a4f; --card:#fff;
+    --shadow:0 1px 2px rgba(20,20,20,.04), 0 8px 24px rgba(20,20,20,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#141517; --ink:#e9e7e2; --muted:#9aa0aa; --line:#2a2c30;
+           --teal:#7fbdb4; --teal-soft:#1b2b2a; --brass:#d3ae74; --card:#1b1d20;
+           --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font:16px/1.75 "PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--teal); text-decoration:none}
+  a:hover{text-decoration:underline; text-underline-offset:3px}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 24px}
+
+  /* 顶栏 */
+  header.nav{position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  .nav-in{display:flex; align-items:center; gap:18px; height:56px}
+  .brand{font-weight:700; letter-spacing:.06em}
+  .brand span{color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; letter-spacing:.12em}
+  .nav-links{margin-left:auto; display:flex; gap:18px; font-size:13.5px}
+  .nav-links a{color:var(--muted)}
+  .nav-links a:hover{color:var(--ink)}
+
+  /* Hero */
+  .hero{display:grid; grid-template-columns:1.25fr .75fr; gap:48px; align-items:center; padding:72px 0 56px}
+  .eyebrow{font-size:12px; letter-spacing:.18em; color:var(--brass); text-transform:uppercase; margin-bottom:14px}
+  h1{font-size:clamp(30px,4.4vw,46px); line-height:1.25; margin:0 0 18px; letter-spacing:-.01em}
+  h1 em{font-style:normal; color:var(--teal)}
+  .lede{font-size:17px; color:var(--muted); margin:0 0 26px; max-width:34em}
+  .btns{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:999px;
+    font-size:14.5px; font-weight:600; border:1px solid transparent; transition:.15s}
+  .btn-primary{background:var(--ink); color:var(--paper)}
+  .btn-primary:hover{opacity:.86; text-decoration:none}
+  .btn-ghost{border-color:var(--line); color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--ink); text-decoration:none}
+  .ver{margin-top:16px; font-size:12.5px; color:var(--muted)}
+  .ver b{color:var(--ink); font-weight:600}
+
+  .portrait{position:relative}
+  /* 立绘原图 768×1376（1:1.79），整张放进首屏会把文字列压到中间、上方空一大片。
+     这里固定高度、从顶部裁切 ⇒ 露出头到膝，比例撑得住，也不再拉高整行。 */
+  .portrait img{width:100%; height:460px; object-fit:cover; object-position:center top;
+    border-radius:16px; box-shadow:var(--shadow); display:block}
+  .portrait figcaption{margin-top:10px; font-size:12px; color:var(--muted); text-align:center}
+
+  /* 数字条 */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:8px 0 72px}
+  .stat{background:var(--card); padding:18px 20px}
+  .stat b{display:block; font-size:24px; letter-spacing:-.02em}
+  .stat span{font-size:12.5px; color:var(--muted)}
+
+  /* 区块 */
+  section{padding:0 0 76px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:26px}
+  .sec-num{font:12px/1 var(--mono,ui-monospace,monospace); color:var(--brass); letter-spacing:.1em}
+  h2{font-size:clamp(21px,2.4vw,27px); margin:0; letter-spacing:-.01em}
+  .sec-sub{color:var(--muted); font-size:14.5px; margin:-14px 0 26px; max-width:52em}
+
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 20px 22px;
+    box-shadow:var(--shadow)}
+  .card h3{margin:0 0 8px; font-size:15.5px; letter-spacing:.01em}
+  .card p{margin:0; font-size:13.8px; color:var(--muted); line-height:1.7}
+  .card .ico{font-size:19px; display:block; margin-bottom:10px; filter:grayscale(.15)}
+
+  /* 示例明信片 */
+  .postcard{display:grid; grid-template-columns:1fr 300px; gap:0; border:1px solid var(--line);
+    border-radius:16px; overflow:hidden; background:var(--card); box-shadow:var(--shadow)}
+  .pc-body{padding:28px 30px}
+  .pc-loc{font-size:11.5px; letter-spacing:.16em; color:var(--brass); text-transform:uppercase}
+  .pc-cap{font-size:22px; line-height:1.5; margin:12px 0 16px; font-weight:600}
+  .pc-text{margin:0; color:var(--muted); font-size:14.5px}
+  .pc-side{background:var(--teal-soft); padding:26px 24px; border-left:1px solid var(--line)}
+  .pc-side h4{margin:0 0 10px; font-size:12px; letter-spacing:.12em; color:var(--teal)}
+  .pc-side ul{margin:0; padding-left:16px; font-size:13px; color:var(--muted); line-height:1.9}
+  .pc-note{grid-column:1/-1; border-top:1px solid var(--line); padding:12px 30px; font-size:12px; color:var(--muted)}
+
+  /* 更新日志 */
+  .log{border-left:2px solid var(--line); margin-left:6px; padding-left:24px; display:grid; gap:26px}
+  .log-item{position:relative}
+  .log-item::before{content:""; position:absolute; left:-31px; top:8px; width:10px; height:10px;
+    border-radius:50%; background:var(--brass); border:2px solid var(--paper)}
+  .log-item .tag{font-size:12px; color:var(--brass); letter-spacing:.08em}
+  .log-item h4{margin:4px 0 8px; font-size:16px}
+  .log-item ul{margin:0; padding-left:18px; color:var(--muted); font-size:14px; line-height:1.85}
+  .log-item code{font-size:12.5px; background:var(--teal-soft); color:var(--teal); padding:1px 6px; border-radius:5px}
+
+  /* 下载 */
+  .dl{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px}
+  .dl-card{border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--card)}
+  .dl-card h3{margin:0 0 4px; font-size:16.5px}
+  .dl-card .size{font-size:12.5px; color:var(--muted); margin-bottom:14px}
+  .dl-card ul{margin:0 0 18px; padding-left:18px; font-size:13.6px; color:var(--muted); line-height:1.85}
+  .table{width:100%; border-collapse:collapse; font-size:13.8px; margin-top:6px}
+  .table th,.table td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  .table th{color:var(--muted); font-weight:500; font-size:12.5px; letter-spacing:.04em}
+  .note{font-size:13px; color:var(--muted); margin-top:14px}
+  .note b{color:var(--ink)}
+
+  /* FAQ */
+  details{border-bottom:1px solid var(--line); padding:14px 0}
+  details summary{cursor:pointer; font-size:15px; font-weight:600; list-style:none; display:flex; gap:10px; align-items:baseline}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"＋"; color:var(--brass); font-weight:400; font-size:13px}
+  details[open] summary::before{content:"－"}
+  details p{margin:10px 0 4px; color:var(--muted); font-size:14px; padding-left:24px}
+
+  /* 关于 */
+  .about{border:1px solid var(--line); border-radius:14px; padding:24px; background:var(--card);
+    display:grid; grid-template-columns:1fr 1fr; gap:26px}
+  .about h4{margin:0 0 8px; font-size:13px; letter-spacing:.1em; color:var(--teal)}
+  .about p{margin:0 0 12px; font-size:13.6px; color:var(--muted); line-height:1.8}
+
+  footer{border-top:1px solid var(--line); padding:30px 0 44px; color:var(--muted); font-size:12.5px}
+  footer p{margin:0 0 6px}
+
+  @media (max-width:880px){
+    .hero{grid-template-columns:1fr; gap:28px; padding:44px 0 40px}
+    .portrait{max-width:260px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr 1fr}
+    .postcard{grid-template-columns:1fr}
+    .pc-side{border-left:0; border-top:1px solid var(--line)}
+    .dl,.about{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:560px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <div class="brand">矩阵庭院<span>MATRIX GARDEN</span></div>
+    <nav class="nav-links">
+      <a href="#what">她会做什么</a>
+      <a href="#postcard">明信片</a>
+      <a href="#changelog">更新日志</a>
+      <a href="#download">下载</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div>
+      <div class="eyebrow">QQ Agent · 生活模组</div>
+      <h1>给她一套<br><em>会自己出门</em>的生活</h1>
+      <p class="lede">
+        矩阵庭院是一套跑在 QQ Agent 上的生活模组：她会在异世界与现实之间往返，
+        从当地寄明信片回来，顺手带特产、邀旅伴、布置庭院 —— 不用你陪着，也不用你指挥。
+      </p>
+      <div class="btns">
+        <a class="btn btn-primary" data-repo href="#download">下载最新版 ↓</a>
+        <a class="btn btn-ghost" href="#what">先看看她做什么</a>
+      </div>
+      <div class="ver">当前版本 <b>v3.17.7</b> · 完整玩法包约 1.1 MB · 支持覆盖安装</div>
+    </div>
+    <figure class="portrait">
+      <img src="assets/whale-pro.jpg" alt="角色参考图：鲸鱼少女全身立绘" width="768" height="1376" loading="lazy">
+      <figcaption>角色参考图 · 绘制：B 站 <b>@zipzippipe</b><br>随包附带，用于图生图锁脸</figcaption>
+    </figure>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>15</b><span>个异世界</span></div>
+    <div class="stat"><b>9</b><span>片现实地区</span></div>
+    <div class="stat"><b>7</b><span>位旅伴</span></div>
+    <div class="stat"><b>8</b><span>件庭院设施</span></div>
+  </div>
+
+  <!-- 概览 -->
+  <section id="what">
+    <div class="sec-head"><span class="sec-num">01</span><h2>她会做什么</h2></div>
+    <p class="sec-sub">核心只有一个循环：出门 → 寄卡 → 回家。其余都是围着它长出来的。</p>
+    <div class="grid">
+      <div class="card">
+        <span class="ico">📮</span>
+        <h3>寄明信片</h3>
+        <p>每趟会寄几张。每张 = 一张图 + 一句题字 + 一段她自己的感想。到家那张是合照，带上了这次同行的旅伴。</p>
+      </div>
+      <div class="card">
+        <span class="ico">🎁</span>
+        <h3>带特产</h3>
+        <p>从各地带回来，可以吃（会有一小段"余味时间"，说话带着那个味道）、送给旅伴、或者在地里种出来。</p>
+      </div>
+      <div class="card">
+        <span class="ico">👭</span>
+        <h3>邀旅伴</h3>
+        <p>七位旅伴，每一位是一个真实 AI 模型的人格化。邀请之后由她本人应你一声，并带来实打实的加成与代价。</p>
+      </div>
+      <div class="card">
+        <span class="ico">🏠</span>
+        <h3>布置庭院</h3>
+        <p>她的家在一格不属于任何世界的地方。观星台、檐廊、藏书阁、相册墙、服务器阵列……都能买。</p>
+      </div>
+      <div class="card">
+        <span class="ico">📖</span>
+        <h3>图鉴与称号</h3>
+        <p>去过的地方、吃过的东西、攒下的成就，会慢慢长成她的履历。技能和衣柜是"去过的世界"才解锁的。</p>
+      </div>
+      <div class="card">
+        <span class="ico">📔</span>
+        <h3>日记与社交</h3>
+        <p>每晚自己写一篇长的，排成图发到空间；装齐模块后，她也会逛别人的空间、点赞、读评论并回一句。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 明信片示例 -->
+  <section id="postcard">
+    <div class="sec-head"><span class="sec-num">02</span><h2>一张明信片长什么样</h2></div>
+    <p class="sec-sub">下面这张是她从《战锤40K》的神圣泰拉回来时寄的。文字是真的，图就不放了 —— 装完你自己看。</p>
+    <div class="postcard">
+      <div class="pc-body">
+        <div class="pc-loc">神圣泰拉 · 帝国皇宫</div>
+        <div class="pc-cap">金墙晃眼得要命，我眯着眼替你看完了</div>
+        <p class="pc-text">
+          从轨道上下来时，我先看到的是喜马拉雅被整个盖住了——不是山，是墙，镀金的墙，宽得像海。
+          走到宫门前才知道自己有多小，一只鲸挤在朝圣人流里，被香炉的烟熏得直打喷嚏。
+          ……门前的卫兵一动不动，盔甲上的金箔被正午晒得发白。
+        </p>
+      </div>
+      <aside class="pc-side">
+        <h4>这张卡里有三层</h4>
+        <ul>
+          <li>一张图（她当时看到的画面）</li>
+          <li>一句题字（十几字，印在卡上）</li>
+          <li>一段感想（她写给你看的）</li>
+        </ul>
+      </aside>
+      <div class="pc-note">示例来自一次真实旅程。她写的字和画出来的图，用的是同一份「她当时看到的东西」。</div>
+    </div>
+  </section>
+
+  <!-- 更新日志 -->
+  <section id="changelog">
+    <div class="sec-head"><span class="sec-num">03</span><h2>更新日志</h2></div>
+    <p class="sec-sub">只记"你会感觉到"的变化。完整的在包里的 <code style="font-size:12.5px">更新简介.md</code>。</p>
+    <div class="log">
+
+      <div class="log-item">
+        <div class="tag">v3.17.7 · 2026-10-18</div>
+        <h4>出图终于认识"那是哪个世界"了</h4>
+        <ul>
+          <li>以前去泰拉，写回来的是"镀金的墙、香炉的烟"，配图却是一座明亮的白色尖塔城。原因是提示词里从没出现过"这是哪个世界"。</li>
+          <li>现在四类卡都带一行「世界」：作品名 + 纯视觉速写（主色、材质、光线、天气、人群），并从她自己写的文字里抽一两句看得见的细节喂给画图模型。</li>
+          <li>特产卡不再张张都是托盘：按件数分档，托盘 / 摊开 / 布袋轮换。</li>
+          <li>修掉一个一直没被触发的 bug：三人以上的合照卡超出提示词上限，会被静默降级成纯文字。</li>
+          <li>一键安装支持<strong>覆盖安装</strong>：先记住你的设置，装完再合并回去。</li>
+        </ul>
+      </div>
+
+      <div class="log-item">
+        <div class="tag">v3.17.6 · 2026-10-17</div>
+        <h4>装得更省事</h4>
+        <ul>
+          <li>核心补丁同时支持宿主 <code>0.4.5</code> 与 <code>0.4.8.5</code>。</li>
+          <li>一键安装可以直接粘生图 key，脚本帮你把地址和模型填好。</li>
+          <li>新装宿主还没启动过时没有配置文件 —— 脚本自己建一个，不再跳过生图设置。</li>
+        </ul>
+      </div>
+
+      <div class="log-item">
+        <div class="tag">v3.17.2 · 2026-10-16</div>
+        <h4>衣柜与着装</h4>
+        <ul>
+          <li>衣柜的解锁条件从"去过异世界"改成"邀请过旅伴"。</li>
+          <li>补上"换回默认那身"—— 以前换下来就回不去了。</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 下载 -->
+  <section id="download">
+    <div class="sec-head"><span class="sec-num">04</span><h2>下载</h2></div>
+    <p class="sec-sub">两个包，装一个就行。都自带一键安装脚本，不用装 Python、不用碰命令行。</p>
+
+    <div class="dl">
+      <div class="dl-card">
+        <h3>完整玩法包</h3>
+        <div class="size">约 1.1 MB · 六个模块</div>
+        <ul>
+          <li>矩阵庭院（本体）</li>
+          <li>世界与事件 · 心情 / 好感度 / 生命值</li>
+          <li>空间日记 · 逛空间 · 长文排版图</li>
+          <li>自带日记长图与社交圈</li>
+        </ul>
+        <a class="btn btn-primary" data-repo href="#download">去 Releases 下载</a>
+      </div>
+      <div class="dl-card">
+        <h3>独立包</h3>
+        <div class="size">约 750 KB · 只有本体</div>
+        <ul>
+          <li>只有矩阵庭院</li>
+          <li>旅行照常，明信片照寄</li>
+          <li>没有日记长图、社交圈、心情联动</li>
+          <li>想先试试的，装这个</li>
+        </ul>
+        <a class="btn btn-ghost" data-repo href="#download">去 Releases 下载</a>
+      </div>
+    </div>
+
+    <table class="table">
+      <thead><tr><th>装之前要知道</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>宿主</td><td>Windows 上的 QQ Agent <code>0.4.5</code> / <code>0.4.8.5</code></td></tr>
+        <tr><td>必做的一步</td><td><b>核心补丁</b>。不打的话她一条消息都发不出去，而且完全静默 —— 一键安装会自动打。</td></tr>
+        <tr><td>装完还要做</td><td>重启宿主 · 在设置里启用模块 · 填两个群号（把家安在哪个群）</td></tr>
+        <tr><td>出图</td><td><b>按张另外收费</b>，钱付给接口方，跟这个包无关。不填 key 也能玩，只是明信片只有文字。</td></tr>
+        <tr><td>升级</td><td>直接下新版覆盖安装。脚本会先记住你的设置，装完再合并回去。</td></tr>
+      </tbody>
+    </table>
+
+    <p class="note">
+      <b>关于覆盖安装做不到的部分</b>：如果你手改过包里的代码文件，覆盖会把改动盖掉（没做三方合并）；
+      如果宿主不是上面那两版，核心补丁可能锚不到位置，脚本会整体回滚、一个字都不写 —— 这种情况等于只装了技能、没打补丁。
+    </p>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="sec-head"><span class="sec-num">05</span><h2>常见问题</h2></div>
+
+    <details><summary>明信片只发文字、没有图</summary>
+      <p>出图接口没配好，或者中转站的模型路由没点开。另一个常见原因是参考图太大（单张超过 1.2 MB 会被跳过）。日志里搜「零图」。</p>
+    </details>
+    <details><summary>她在每张明信片里长得都不一样</summary>
+      <p>没放参考图。把包里 <code>角色图/</code> 那两张拷进 <code>&lt;数据目录&gt;/skills/travel-whale/refs/</code>，图生图链路就会锁住长相。</p>
+    </details>
+    <details><summary>说「去异世界」她不去</summary>
+      <p>点名去某地的行程<strong>不会穿越</strong>。想解锁异世界，说「出门吧」「你想去哪就去哪」，别点地名 —— 她自己挑地方，才有机会被丢去异世界。</p>
+    </details>
+    <details><summary>技能表和衣柜一开始是空的</summary>
+      <p>不是坏了。没去过的世界，连装备名都不出现 —— 这是探索感的一部分。</p>
+    </details>
+    <details><summary>老存档还能用吗</summary>
+      <p>能。存档结构与路径这一版没改。她的全部家当在 <code>&lt;数据目录&gt;/skills/travel-whale/</code> 下，想备份就整个目录拷走。</p>
+    </details>
+    <details><summary>很耗额度吗</summary>
+      <p>是。每次出图、每条旅伴评论、每篇日记都是一次模型调用。想省可以把「明信片评论概率」设成 0。</p>
+    </details>
+  </section>
+
+  <!-- 关于 -->
+  <section id="about">
+    <div class="sec-head"><span class="sec-num">06</span><h2>关于这个项目</h2></div>
+    <div class="about">
+      <div>
+        <h4>它是什么</h4>
+        <p>一个跑在 <strong>QQ Agent</strong>（第三方打包版宿主）上的生活模组。本体是一个技能，配套两个插件与三个辅助技能。</p>
+        <p>玩法上更接近"养成 + 桌面宠物"：没有胜负、没有目标，只有她自己的一天。</p>
+      </div>
+      <div>
+        <h4>它不是什么</h4>
+        <p>不是官方产品，与宿主作者无关；不含任何私人配置、群号或密钥；包内也不带原作者的 bot 角色名 —— 装完就是<strong>你自己的她</strong>。</p>
+        <p>不提供模型额度，也不代付任何接口费用。</p>
+      </div>
+    </div>
+    <p class=note style=margin-top:16px>
+      素材与致谢：角色参考图由 B 站作者 <b>@zipzippipe</b> 提供，版权归原作者。
+      这里与安装包内都只把它当作「图生图参考」使用 —— 不用于售卖，也不作为头像/立绘素材二次分发。
+      原作者如不希望被使用，告知即会移除。
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>矩阵庭院 · Matrix Garden — 个人项目，非商业。</p>
+    <p>角色参考图由 B 站作者 <b>@zipzippipe</b> 提供，版权归原作者；此处与安装包内仅作「图生图参考」使用。</p>
+    <p>页面与文案由作者整理；角色图随包附带。</p>
+  </div>
+</footer>
+
+<script>
+  // ★ 部署前只改这一行：换成你的 GitHub 用户名/仓库名（例如 "lily/matrix-garden-site"）。
+  const REPO = "USER/REPO";
+  if (REPO === "USER/REPO") {
+    // 还没填仓库名：按钮先停在本页，不产生死链
+    console.warn("[矩阵庭院] 还没设置 REPO —— 请把 index.html 里的 USER/REPO 换成你的用户名/仓库名");
+  } else {
+    document.querySelectorAll("[data-repo]").forEach(function (a) {
+      a.href = "https://github.com/" + REPO + "/releases/latest";
+    });
+  }
+</script>
+</body>
+</html>
