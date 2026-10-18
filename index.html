@@ -172,7 +172,7 @@
         从当地寄明信片回来，顺手带特产、邀旅伴、布置庭院 —— 不用你陪着，也不用你指挥。
       </p>
       <div class="btns">
-        <a class="btn btn-primary" data-repo href="#download">下载最新版 ↓</a>
+        <a class="btn btn-primary" data-repo href="https://github.com/liyuyucarp-dot/matrix-garden-site/releases/latest">下载最新版 ↓</a>
         <a class="btn btn-ghost" href="#what">先看看她做什么</a>
       </div>
       <div class="ver">当前版本 <b>v3.17.7</b> · 完整玩法包约 1.1 MB · 支持覆盖安装</div>
@@ -309,7 +309,7 @@
           <li>空间日记 · 逛空间 · 长文排版图</li>
           <li>自带日记长图与社交圈</li>
         </ul>
-        <a class="btn btn-primary" data-repo href="#download">去 Releases 下载</a>
+        <a class="btn btn-primary" data-asset="matrix-garden-full-v3.17.7.zip" href="https://github.com/liyuyucarp-dot/matrix-garden-site/releases/download/v3.17.7/matrix-garden-full-v3.17.7.zip">下载完整包（1.1 MB）</a>
       </div>
       <div class="dl-card">
         <h3>独立包</h3>
@@ -320,7 +320,7 @@
           <li>没有日记长图、社交圈、心情联动</li>
           <li>想先试试的，装这个</li>
         </ul>
-        <a class="btn btn-ghost" data-repo href="#download">去 Releases 下载</a>
+        <a class="btn btn-ghost" data-asset="matrix-garden-solo-v3.17.7.zip" href="https://github.com/liyuyucarp-dot/matrix-garden-site/releases/download/v3.17.7/matrix-garden-solo-v3.17.7.zip">下载独立包（750 KB）</a>
       </div>
     </div>
 
@@ -398,16 +398,15 @@
 </footer>
 
 <script>
-  // ★ 部署前只改这一行：换成你的 GitHub 用户名/仓库名（例如 "lily/matrix-garden-site"）。
+  // ★ 换版本时改这一处：TAG ＋ 下面三处版本号文字 ＋ 两个 data-asset 里的文件名。
   const REPO = "liyuyucarp-dot/matrix-garden-site";
-  if (REPO === "USER/REPO") {
-    // 还没填仓库名：按钮先停在本页，不产生死链
-    console.warn("[矩阵庭院] 还没设置 REPO —— 请把 index.html 里的 USER/REPO 换成你的用户名/仓库名");
-  } else {
-    document.querySelectorAll("[data-repo]").forEach(function (a) {
-      a.href = "https://github.com/" + REPO + "/releases/latest";
-    });
-  }
+  const TAG = "v3.17.7";
+  document.querySelectorAll("[data-repo]").forEach(function (a) {
+    a.href = "https://github.com/" + REPO + "/releases/latest";
+  });
+  document.querySelectorAll("[data-asset]").forEach(function (a) {
+    a.href = "https://github.com/" + REPO + "/releases/download/" + TAG + "/" + a.getAttribute("data-asset");
+  });
 </script>
 </body>
 </html>
