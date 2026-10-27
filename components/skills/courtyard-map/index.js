@@ -151,11 +151,18 @@ function mapThemeOf() {
   } catch { return null; }
 }
 function worldOf(st) {
-  const equipUnlocked = new Set((Array.isArray(st?.whale?.equipUnlocked) ? st.whale.equipUnlocked : []).map(String));
+  // ★★ 2026-10-27：存档里的 id 先按当前主题**归位**，再做解锁/可见判定。
+  //   不收这一步的后果（用户实测"地球没了"）：原地球九区在非默认主题下已收束成 `earth`，
+  //   而老存档 `equipUnlocked` 里只有 asia/europe/… ⇒ `equipUnlocked.has('earth')` 为假
+  //   ⇒ `visible=false` ⇒ 面板把「蔚蓝地球」整张卡过滤掉，看起来就是"我的地球不见了"。
+  //   归位失败时保留原值（保守，绝不丢用户数据）。
+  const norm = (id, city) => normalizeRegionKey(id, city) || String(id || '');
+  const equipUnlocked = new Set((Array.isArray(st?.whale?.equipUnlocked) ? st.whale.equipUnlocked : [])
+    .map(String).map((id) => norm(id)));
   const equipBuyable = new Set((Array.isArray(st?.whale?.equipBuyable) ? st.whale.equipBuyable : []).map(String));
   const visited = new Set(Object.values(st?.visitedCities && typeof st.visitedCities === 'object' ? st.visitedCities : {})
-    .map((v) => String(v?.region || '')).filter(Boolean));
-  if (st?.trip?.region) visited.add(String(st.trip.region));
+    .map((v) => norm(v?.region, v?.city)).filter(Boolean));
+  if (st?.trip?.region) visited.add(norm(st.trip.region, st.trip.city));
   const map = {};
   for (const r of regionsOf()) {
     const id = String(r.id);

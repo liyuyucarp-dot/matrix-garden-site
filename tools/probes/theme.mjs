@@ -91,6 +91,12 @@ try {
     if (keys.includes(k)) legacyProblems.push({ check: 'legacy.residue', detail: `world 里仍残留旧键 ${k}` });
   }
   if (!keys.includes('earth')) legacyProblems.push({ check: 'legacy.earth', detail: '旧地球应收束成 earth（蔚蓝地球），实际没有' });
+  // ★ 地球必须**可见**（用户实测过的坑：收束成 earth 后 equipUnlocked 里没有这个 id，
+  //   被 visible 判定过滤掉 ⇒ 面板上"地球整张卡消失"）
+  const earth = snap.world?.earth;
+  if (earth && (earth.unlocked !== true || earth.visible !== true)) {
+    legacyProblems.push({ check: 'legacy.earthVisible', detail: `地球应 unlocked+visible，实际 unlocked=${earth.unlocked} visible=${earth.visible}` });
+  }
   const curZone = (snap.regions || []).find((r) => (r.cities || []).some((c) => c.current));
   if (!curZone || curZone.key !== 'azeroth_outland') {
     legacyProblems.push({ check: 'legacy.current', detail: `"她现在在这"应落在 azeroth_outland，实际 ${curZone ? curZone.key : '(无)'}` });
