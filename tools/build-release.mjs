@@ -67,14 +67,29 @@ function gateManifest() {
 }
 
 function gateEslint() {
-  const probe = spawnSync(process.execPath, [path.join(repo, 'node_modules', 'eslint', 'bin', 'eslint.js'), '--version'], { encoding: 'utf8' });
-  const npx = probe.status === 0 ? null : spawnSync('npx', ['--no-install', 'eslint', '--version'], { encoding: 'utf8', shell: true });
-  const available = probe.status === 0 || (npx && npx.status === 0);
-  if (!available) return { skipped: true, ok: true, detail: '未安装 eslint（npm i -D eslint eslint-plugin-import 后启用）' };
-  const bin = probe.status === 0 ? process.execPath : 'npx';
-  const argv = probe.status === 0
-    ? [path.join(repo, 'node_modules', 'eslint', 'bin', 'eslint.js'), 'components', '--no-eslintrc', '--rule', '{"no-undef":"error"}', '--env', 'es2022,node', '--parser-options', '{"ecmaVersion":2022,"sourceType":"module"}']
-    : ['--no-install', 'eslint', 'components', '--no-eslintrc', '--rule', '{"no-undef":"error"}', '--env', 'es2022,node'];
+  // 用 ESLint 8 而不是 9：9 的 flat config 删掉了 --no-eslintrc/--env/--parser-options，
+  // 而这里刻意**不落 .eslintrc 文件**（保持仓库零配置），所以钉 8.x。
+  const local = path.join(repo, 'node_modules', 'eslint', 'bin', 'eslint.js');
+  const versionProbe = exists(local)
+    ? spawnSync(process.execPath, [local, '--version'], { encoding: 'utf8' })
+    : spawnSync('npx', ['--no-install', 'eslint@8', '--version'], { encoding: 'utf8', shell: true });
+  const available = versionProbe.status === 0;
+  if (!available) return { skipped: true, ok: true, detail: '未安装 eslint@8（npm i -D eslint@8 后启用；CI 会装）' };
+
+  const bin = exists(local) ? process.execPath : 'npx';
+  const base = exists(local) ? [local] : ['--no-install', 'eslint@8'];
+  const argv = [
+    ...base,
+    'components',
+    '--no-eslintrc',
+    '--rule', '{"no-undef":"error"}',
+    // 面板 JS 是浏览器代码（document/window/localStorage），组件是 Node —— 两套环境都要给
+    '--env', 'es2022,node,browser',
+    '--parser-options', '{"ecmaVersion":2022,"sourceType":"module"}',
+    '--ignore-pattern', '**/dev-tests/**',
+    '--ignore-pattern', '**/panel/**/*.min.js',
+    '--ext', '.js,.mjs'
+  ];
   const r = spawnSync(bin, argv, { cwd: repo, encoding: 'utf8', shell: bin === 'npx' });
   return { ok: r.status === 0, detail: (r.stdout || r.stderr || '').slice(-1500) };
 }

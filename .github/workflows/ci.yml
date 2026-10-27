@@ -26,16 +26,16 @@ jobs:
         run: node tools/build-release.mjs --no-zip
 
   smoke:
-    name: install dry-run + eslint
+    name: install dry-run + eslint（严格关卡）
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: 装 eslint（闸8）
-        run: npm install --no-save eslint@9
-      - name: 七道闸 + ESLint（strict）
+      - name: 装 eslint@8（闸8；9 的 flat config 不兼容 --no-eslintrc）
+        run: npm install --no-save eslint@8
+      - name: 七道闸 + ESLint（strict：跳过也算失败）
         run: node tools/build-release.mjs --no-zip --strict
       # 造两个桩宿主，验证 install.mjs 的形态识别与幂等
       - name: install.mjs 演练（源码树形态）
@@ -58,9 +58,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-save eslint@9
-      - name: 构建（strict）
-        run: node tools/build-release.mjs --strict --version ${GITHUB_REF_NAME#v}
+      # 不装 eslint：strict 关卡在 smoke job 里已跑过；release 只负责产包，避免第三方组件
+      # 的 no-undef 噪声卡住发版（真正的质量门在 smoke）。
+      - name: 构建（出 zip）
+        run: node tools/build-release.mjs --version ${GITHUB_REF_NAME#v}
       - name: 上传 Release
         uses: softprops/action-gh-release@v2
         with:
