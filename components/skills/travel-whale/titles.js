@@ -242,11 +242,11 @@ export const TITLES = [
   { id: 'senior-traveler', group: '旅行次数', points: 5, name: '星野深处', icon: '🌠', desc: '累计旅行 50 次', check: (s) => trips(s) >= 50 },
   { id: 'legend', group: '旅行次数', points: 10, name: '星野无尽', icon: '🐋', desc: '累计旅行 100 次', check: (s) => trips(s) >= 100 },
 
-  // ── 世界版图：现实 4 条（沿用）+ 异世界 4 条（★ 本轮新增）──
-  { id: 'asia-master', group: '世界版图', points: 3, name: '亚洲通', icon: '🏮', desc: '在亚洲去过 3 个不同城市', check: (s) => citiesIn(s, 'asia') >= 3 },
-  { id: 'five-continents', group: '世界版图', points: 5, name: '环游五洲', icon: '🗺️', desc: '5 个大洲各至少去过 1 次', check: (s) => allRegionsVisited(s, CONTINENTS) },
-  { id: 'four-seas', group: '世界版图', points: 5, name: '四海为家', icon: '🌏', desc: '5 洲 + 4 洋全部去过至少 1 次', check: (s) => allRegionsVisited(s, [...CONTINENTS, ...OCEANS]) },
-  { id: 'polar', group: '世界版图', points: 3, name: '极地探险家', icon: '❄️', desc: '去过北冰洋', check: (s) => regionIds(s).has('arctic') },
+  // ── 世界版图：基础世界 4 条（默认地球9区；重锚定后自动适配新基础世界）+ 异世界 4 条 ──
+  { id: 'asia-master', group: '世界版图', points: 3, name: '亚洲通', icon: '🏮', desc: '在亚洲（或主锚定区）去过 3 个不同城市', check: (s, ctx) => citiesIn(s, ctx?.primaryBaseId || 'asia') >= 3 },
+  { id: 'five-continents', group: '世界版图', points: 5, name: '环游五洲', icon: '🗺️', desc: '5 个基础大洲/大区各至少去过 1 次', check: (s, ctx) => allRegionsVisited(s, ctx?.baseContinentIds || CONTINENTS) },
+  { id: 'four-seas', group: '世界版图', points: 5, name: '四海为家', icon: '🌏', desc: '全部基础世界大区各去过至少 1 次', check: (s, ctx) => allRegionsVisited(s, ctx?.baseAllIds || [...CONTINENTS, ...OCEANS]) },
+  { id: 'polar', group: '世界版图', points: 3, name: '极地探险家', icon: '❄️', desc: '去过北冰洋（或极寒大区）', check: (s, ctx) => regionIds(s).has(ctx?.polarBaseId || 'arctic') },
   // ★ 新增：异世界。口径与技能树一致 —— **只认她本人去过**（`visitedCities`），
   //   闲置伙伴"自己去玩"带回的特产不进 `visitedCities` ⇒ 不算她去过。
   { id: 'otherworld-first', group: '世界版图', points: 1, name: '初次越界', icon: '🌀', desc: '去过第 1 个异世界', check: (s, ctx) => fictionVisited(s, ctx) >= 1 },

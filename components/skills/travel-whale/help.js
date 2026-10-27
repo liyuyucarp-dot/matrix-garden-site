@@ -124,11 +124,14 @@ function companionTable(ownedIds = []) {
  */
 function equipGrid(unlocked = null, visible = null) {
   let list = [];
-  try { list = loadRegions(); } catch { return '<p>（地区表读取失败）</p>'; }
+  try { list = loadRegions().filter((r) => r && !r.defaultUnlocked && !r.baseWorld && r.equipment); } catch { return '<p>（地区表读取失败）</p>'; }
   const known = Array.isArray(unlocked) ? new Set(unlocked.map(String)) : null;
   const vis = Array.isArray(visible) ? new Set(visible.map(String)) : null;
   // 还没发现的世界，连装备名都不出现（这就是用户要的"探索感"）
   const shown = vis ? list.filter((r) => vis.has(String(r.id))) : list;
+  if (!shown.length) {
+    return '<p class="note">（基础世界各地区已默认全部解锁，无需装备；异世界装备会在偶遇「穿越」发现新世界坐标后显示）</p>';
+  }
   const isOn = (r) => (known ? known.has(String(r.id)) : Boolean(r.defaultUnlocked));
   const cells = shown.map((r) =>
     `<div class="eq"><span class="eqn">${esc(r.equipment)}${isOn(r) ? ' ✅' : ''}</span>`
@@ -251,8 +254,8 @@ const CHEATS = [
   //   ⚠️ 2026-10-13 修：这串名单**太长**，塞在速查表的一格里会把右列挤到重叠
   //   ⇒ 速查表只留一句短话，名单挪到表下面的注释（见 `companionRosterNote()`）。
   ['邀请旅行伙伴', '邀请小狐狸一起上路'],
-  ['解锁新地区', '解锁牛皮旅行箱'],
-  ['换装备 / 指定地区', '换成牛皮旅行箱'],
+  ['解锁异世界', '买风之翼 / 解锁罗德岛徽章'],
+  ['指定目的地出门', '让她去杭州 / 让她去蒙德城'],
   ['让它出门', '让它去旅行'],
   ['看明信片', '看看它寄回来的照片'],
   ['看收集进度', '它有什么称号'],
@@ -447,12 +450,11 @@ export function buildWhaleHelpHtml({
     </div>
 
     <div class="card wide">
-      <h2><span class="idx">5</span>🎒 买装备 —— 决定它去哪</h2>
+      <h2><span class="idx">5</span>🎒 异世界装备 —— 解锁新世界</h2>
       ${equipGrid(unlocked, visibleEquip)}
-      <p class="note">各 ${PRICES.equip} 亿 TOKEN，<b>永久拥有</b>，随时可换。打 ✅ 的是<b>已经解锁</b>的
-      （默认给的九件 + 她自己买过的）；没打勾的<b>都能买</b>。<br>
-      ★ 表里只列<b>她已经去过、或已经知道坐标</b>的地方 —— 还没发现的世界，连装备长什么样都不显示。<br>
-      换装备说「换成水墨纸伞」；想看现有装备说「我现在带什么装备」。</p>
+      <p class="note">基础世界的所有地区<b>默认全部解锁</b>，随时可直接前往，不需要装备。<br>
+      异世界装备各 ${PRICES.equip} 亿 TOKEN，买下即<b>永久解锁</b>对应异世界（打 ✅ 的是已解锁的，没打勾的都能买）。<br>
+      ★ 表里只列<b>她已经去过、或已经知道坐标</b>的异世界 —— 还没发现的世界，连装备长什么样都不显示。</p>
     </div>
 
     <div class="card wide">

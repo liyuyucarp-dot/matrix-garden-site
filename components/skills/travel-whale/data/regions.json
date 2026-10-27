@@ -5,7 +5,6 @@
       "id": "asia",
       "name": "亚洲",
       "kind": "continent",
-      "equipment": "水墨纸伞",
       "defaultUnlocked": true,
       "styles": [
         "水墨写意",
@@ -509,7 +508,6 @@
       "id": "europe",
       "name": "欧洲",
       "kind": "continent",
-      "equipment": "牛皮旅行箱",
       "defaultUnlocked": true,
       "styles": [
         "油画厚涂",
@@ -699,7 +697,6 @@
       "id": "africa",
       "name": "非洲",
       "kind": "continent",
-      "equipment": "探险遮阳帽",
       "defaultUnlocked": true,
       "styles": [
         "水彩绘本",
@@ -845,7 +842,6 @@
       "id": "americas",
       "name": "美洲",
       "kind": "continent",
-      "equipment": "牛仔帽",
       "defaultUnlocked": true,
       "styles": [
         "美式漫画",
@@ -1002,7 +998,6 @@
       "id": "oceania",
       "name": "大洋洲",
       "kind": "continent",
-      "equipment": "冲浪板",
       "defaultUnlocked": true,
       "styles": [
         "明亮插画",
@@ -1124,7 +1119,6 @@
       "id": "pacific",
       "name": "太平洋",
       "kind": "ocean",
-      "equipment": "潜水镜",
       "defaultUnlocked": true,
       "styles": [
         "明亮插画",
@@ -1223,7 +1217,6 @@
       "id": "atlantic",
       "name": "大西洋",
       "kind": "ocean",
-      "equipment": "航海罗盘",
       "defaultUnlocked": true,
       "styles": [
         "油画厚涂",
@@ -1340,7 +1333,6 @@
       "id": "indian",
       "name": "印度洋",
       "kind": "ocean",
-      "equipment": "珊瑚手串",
       "defaultUnlocked": true,
       "styles": [
         "明快水彩",
@@ -1451,7 +1443,6 @@
       "id": "arctic",
       "name": "北冰洋",
       "kind": "ocean",
-      "equipment": "厚毛围巾",
       "defaultUnlocked": true,
       "styles": [
         "冷色水彩",
@@ -1641,8 +1632,18 @@
         },
         {
           "name": "网道",
-          "placeTags": ["corridor"],
-          "cityTags": { "科摩罗": ["corridor", "settlement"], "黑图书馆": ["corridor"] },
+          "placeTags": [
+            "corridor"
+          ],
+          "cityTags": {
+            "科摩罗": [
+              "corridor",
+              "settlement"
+            ],
+            "黑图书馆": [
+              "corridor"
+            ]
+          },
           "cities": [
             "黑图书馆",
             "科摩罗"
@@ -1652,7 +1653,10 @@
         },
         {
           "name": "亚空间",
-          "placeTags": ["void", "corridor"],
+          "placeTags": [
+            "void",
+            "corridor"
+          ],
           "foe": "一群从虚无里凝成的恶魔",
           "foeLook": "扭曲失形的紫粉色恶魔，肢体比例失调、浑身长着多余的嘴与眼"
         }
@@ -1731,7 +1735,9 @@
         },
         {
           "name": "摩瑞亚",
-          "placeTags": ["corridor"],
+          "placeTags": [
+            "corridor"
+          ],
           "cities": [
             "卡扎督姆",
             "摩瑞亚之门"
@@ -2125,7 +2131,9 @@
         },
         {
           "name": "虫群领域",
-          "placeTags": ["wild"],
+          "placeTags": [
+            "wild"
+          ],
           "cities": [
             "查尔",
             "泽鲁斯"
@@ -2144,7 +2152,9 @@
         },
         {
           "name": "边境星域",
-          "placeTags": ["void"],
+          "placeTags": [
+            "void"
+          ],
           "cities": [
             "新福尔松"
           ],
@@ -2248,7 +2258,9 @@
         },
         {
           "name": "魔界",
-          "placeTags": ["wild"],
+          "placeTags": [
+            "wild"
+          ],
           "cities": [
             "梦幻馆"
           ],
@@ -2309,7 +2321,9 @@
         },
         {
           "name": "宇宙要塞",
-          "placeTags": ["corridor"],
+          "placeTags": [
+            "corridor"
+          ],
           "cities": [
             "阿·巴瓦·库",
             "所罗门",
@@ -2406,7 +2420,10 @@
         },
         {
           "name": "深根底层",
-          "placeTags": ["wild", "corridor"],
+          "placeTags": [
+            "wild",
+            "corridor"
+          ],
           "cities": [
             "深根底层"
           ],
@@ -2473,7 +2490,10 @@
         },
         {
           "name": "幽暗地域",
-          "placeTags": ["wild", "corridor"],
+          "placeTags": [
+            "wild",
+            "corridor"
+          ],
           "cities": [
             "魔索布莱城"
           ],
@@ -2551,7 +2571,9 @@
         },
         {
           "name": "荒野与秘境",
-          "placeTags": ["wild"],
+          "placeTags": [
+            "wild"
+          ],
           "cities": [
             "霍纳奇斯山脉",
             "拉姆德古堡",
@@ -2570,7 +2592,9 @@
         },
         {
           "name": "非凡领域",
-          "placeTags": ["void"],
+          "placeTags": [
+            "void"
+          ],
           "cities": [
             "灵界",
             "灰雾之上"
@@ -2790,7 +2814,9 @@
         },
         {
           "name": "恶土",
-          "placeTags": ["wild"],
+          "placeTags": [
+            "wild"
+          ],
           "cities": [
             "废弃公路",
             "夜游者营地"

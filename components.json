@@ -1,6 +1,6 @@
 {
   "packageName": "矩阵庭院-完整包",
-  "version": "3.0.0-dev.2",
+  "version": "3.0.0-dev.3",
   "componentCount": 16,
   "patches": [
     {
@@ -37,7 +37,7 @@
     {
       "kind": "skills",
       "id": "travel-whale",
-      "version": "4.4.6",
+      "version": "4.6.0",
       "path": "components/skills/travel-whale"
     },
     {

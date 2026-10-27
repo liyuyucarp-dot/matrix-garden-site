@@ -1,0 +1,12 @@
+{
+  "id": "default",
+  "name": "蔚蓝地球（标准矩阵庭院）",
+  "description": "默认主题：以地球九大洲洋（亚洲/欧洲/非洲/美洲/大洋洲/四大洋）作为默认解锁的基础世界，水镜之门通往 15 个异世界。",
+  "baseWorldId": "earth",
+  "earthMode": "base",
+  "home": {
+    "name": "矩阵庭院",
+    "gateLabel": "◈ 水 镜 之 门 ◈",
+    "homePlaceLabel": "在矩阵庭院"
+  }
+}

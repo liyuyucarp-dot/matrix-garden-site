@@ -23,6 +23,12 @@ import {
   FOOD_TIERS, companionOf, companionsOf, partyCardMultOf, partyRareMultOf, cityKey
 } from './state.js';
 import { pickCharacterStyle } from './postcard.js';
+import {
+  loadThemedRegions,
+  expandParentWorldKeyedMap,
+  expandParentWorldRegionMap,
+  onThemeChange
+} from './core/theme-pack.js';
 
 // 口粮档位定义在 state.js（单一来源），这里原样转出，调用方只认 trip.js 一个入口
 export { FOOD_TIERS };
@@ -46,13 +52,16 @@ export function visitWeight(count) {
 const regionsFile = () => path.join(HERE, 'data', 'regions.json');
 let _regions = null;
 
-/** 读地区表（带缓存）。文件损坏时抛错，由调用方决定降级策略。 */
+/** 读地区表（带缓存；默认路径自动经过 theme-pack 主题变换）。文件损坏时抛错，由调用方决定降级策略。 */
 export function loadRegions(file = regionsFile()) {
-  if (_regions && file === regionsFile()) return _regions;
+  if (file === regionsFile()) {
+    if (_regions) return _regions;
+    _regions = loadThemedRegions(file);
+    return _regions;
+  }
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
   const list = Array.isArray(parsed?.regions) ? parsed.regions : [];
   if (!list.length) throw new Error('地区表为空');
-  if (file === regionsFile()) _regions = list;
   return list;
 }
 
@@ -120,8 +129,8 @@ export function missingTraitsOf(regionId, country, city) {
     try {
       const parsed = JSON.parse(fs.readFileSync(placeTraitsFile(), 'utf8')) || {};
       _missingTraits = {
-        group: parsed.missing || {},
-        city: parsed.missingCity || {},
+        group: expandParentWorldKeyedMap(parsed.missing || {}),
+        city: expandParentWorldKeyedMap(parsed.missingCity || {}),
         absent: new Set(Array.isArray(parsed.folkAbsentRegions) ? parsed.folkAbsentRegions.map(String) : []),
         present: new Set(Array.isArray(parsed.folkPresentCities) ? parsed.folkPresentCities.map(String) : [])
       };
@@ -137,10 +146,16 @@ export function missingTraitsOf(regionId, country, city) {
       if (TRAIT_IDS.has(s)) out.add(s);
     }
   };
+  const parentId = regionById(regionId)?.parentWorldId;
   put(_missingTraits.group[`${regionId}|${country}`]);
+  if (parentId) put(_missingTraits.group[`${parentId}|${country}`]);
   if (city) {
     put(_missingTraits.city[`${regionId}|${city}`]);
-    if (_missingTraits.absent.has(String(regionId)) && !_missingTraits.present.has(`${regionId}|${city}`)) {
+    if (parentId) put(_missingTraits.city[`${parentId}|${city}`]);
+    const checkRid = parentId && _missingTraits.absent.has(String(parentId)) ? String(parentId) : String(regionId);
+    if (_missingTraits.absent.has(checkRid)
+      && !_missingTraits.present.has(`${regionId}|${city}`)
+      && !(parentId && _missingTraits.present.has(`${parentId}|${city}`))) {
       out.add('folk');
     }
   }
@@ -394,7 +409,7 @@ export function buildFreeCityPrompt(region, visitedInRegion) {
 
   if (isFictional(region)) {
     return [
-      `你是旅行策划。请在虚构作品《${region.name}》的世界里，挑一个**地标级的目的地**让旅行者去看看。`,
+      `你是旅行策划。请在虚构作品《${region.workName || region.name}》的世界里，挑一个**地标级的目的地**让旅行者去看看。`,
       `这个作品里已知的大区域：${countries}。`,
       '可以挑上面区域里的其它地点，也可以挑这部作品里其它有名的地方 —— 星球、城市、要塞、遗迹、空间站都行。',
       avoid,
@@ -1089,13 +1104,19 @@ function loadStyleTiers() {
   if (styleTiersCache) return styleTiersCache;
   try {
     const raw = JSON.parse(fs.readFileSync(TIERS_FILE, 'utf8'));
-    styleTiersCache = raw && typeof raw.tiers === 'object' ? raw.tiers : {};
+    const base = raw && typeof raw.tiers === 'object' ? raw.tiers : {};
+    styleTiersCache = expandParentWorldRegionMap(base);
   } catch (error) {
     console.warn('[travel-whale] 画风契合度表读取失败（退回等概率）：' + (error?.message ?? error));
     styleTiersCache = {};
   }
   return styleTiersCache;
 }
+onThemeChange(() => {
+  _regions = null;
+  _missingTraits = null;
+  styleTiersCache = null;
+});
 
 /** 1 → 3 份，2 → 1 份，3 → 0 份（不进池）。 */
 function styleWeight(row, name) {

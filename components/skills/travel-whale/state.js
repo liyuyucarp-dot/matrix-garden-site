@@ -17,6 +17,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATA_DIR } from '../../src/config.js';
 import { SOUVENIR_KINDS } from './souvenir.js';
+import {
+  defaultBaseRegionId,
+  defaultUnlockedIdsOfTheme,
+  otherworldIdsOfTheme,
+  isOtherworldRegion,
+  loadThemedRegions,
+  onThemeChange
+} from './core/theme-pack.js';
 
 // ── 常量 ──────────────────────────────────────────────────────────────────
 
@@ -956,9 +964,8 @@ let _defaultUnlocked = null;
 function defaultUnlockedRegionIds() {
   if (_defaultUnlocked) return _defaultUnlocked;
   try {
-    const j = JSON.parse(fs.readFileSync(new URL('./data/regions.json', import.meta.url), 'utf8'));
-    const ids = (j?.regions || []).filter((r) => r.defaultUnlocked === true).map((r) => r.id);
-    _defaultUnlocked = ids.length ? ids : ['asia'];
+    const ids = defaultUnlockedIdsOfTheme();
+    _defaultUnlocked = ids.length ? ids : [defaultBaseRegionId()];
   } catch {
     _defaultUnlocked = ['asia'];
   }
@@ -983,14 +990,15 @@ function defaultUnlockedRegionIds() {
 //    所以下面 `equipBuyableOf` 特意在"读不到异世界表"时**放行**（见那里的注释）。
 
 let _fictionalIds = null;
-/** 全部异世界的 regionId（读 regions.json，带缓存）。 */
+onThemeChange(() => {
+  _defaultUnlocked = null;
+  _fictionalIds = null;
+});
+/** 全部异世界的 regionId（经过当前主题变换后的非默认解锁世界，带缓存）。 */
 export function fictionalRegionIds() {
   if (_fictionalIds) return _fictionalIds;
   try {
-    const j = JSON.parse(fs.readFileSync(new URL('./data/regions.json', import.meta.url), 'utf8'));
-    _fictionalIds = (j?.regions || [])
-      .filter((r) => r && (r.fictional === true || r.kind === 'fictional'))
-      .map((r) => String(r.id));
+    _fictionalIds = otherworldIdsOfTheme();
   } catch {
     _fictionalIds = [];
   }
@@ -1017,11 +1025,11 @@ export function equipBuyableOf(state) {
  */
 export function isEquipBuyable(state, region) {
   if (!region) return false;
-  if (region.defaultUnlocked === true) return true;                 // 现实 9 个：本来就能去
+  if (region.defaultUnlocked === true) return true;                 // 基础世界默认解锁区：本来就能去
   const id = String(region.id || '');
   if (!id) return false;
   if (Array.isArray(state?.whale?.equipUnlocked) && state.whale.equipUnlocked.includes(id)) return true;
-  const isFic = region.fictional === true || region.kind === 'fictional';
+  const isFic = isOtherworldRegion(region);
   if (!isFic) return true;                                          // 非异世界：不设闸
   // ★ 读不到异世界表（文件坏了）⇒ 别把商店卡死：退回放行
   if (!fictionalRegionIds().length) return true;
@@ -1093,9 +1101,15 @@ export function loadState(chatKey) {
       //   titles.js 的「装备齐全」称号会**永远拿不到**（它的判据就是数这个数组）。
       //   用 Set 去重：老存档里已有的 id 不会重复。
       merged.whale = merged.whale || {};
+      const validRegionIds = (() => {
+        try { return new Set(loadThemedRegions().map((r) => String(r?.id || '')).filter(Boolean)); }
+        catch { return null; }
+      })();
+      const keptUnlocked = (Array.isArray(merged.whale.equipUnlocked) ? merged.whale.equipUnlocked : [])
+        .map(String)
+        .filter((id) => !validRegionIds || validRegionIds.has(id));
       merged.whale.equipUnlocked = [
-        ...new Set([...(Array.isArray(merged.whale.equipUnlocked) ? merged.whale.equipUnlocked : []),
-          ...defaultUnlockedRegionIds()])
+        ...new Set([...keptUnlocked, ...defaultUnlockedRegionIds()])
       ];
       // ★★ 2026-10-15「探索解锁」老档兼容：
       //   这个键**在 10-15 之前根本不存在** —— 那时异世界装备是**随便买**的。

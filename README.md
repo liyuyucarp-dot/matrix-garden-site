@@ -12,7 +12,8 @@ QQ Agent 的「她自己的生活」整合包：**15 个组件**（4 技能 + 11
 
 ```
 components/
-  skills/          courtyard-doctor · courtyard-map · qzone（v2.3.0 起合并了原 qqzone）· travel-whale
+  skills/          courtyard-doctor · courtyard-map · qzone（v2.3.0 起合并了原 qqzone）
+                   travel-whale 4.6.0（index.js 巨石已拆成 core/ 16 个模块 + 603 行门面）
   plugins/         autobiography · bili-whale · courtyard-bus · favor-core · knowledge-base
                    learning-loop · life-system · mind-wish · silence-ping · sleep-mood · think-gate
 patch/             核心补丁（QQ Agent 0.4.8.x，11 项）
