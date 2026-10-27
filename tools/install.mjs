@@ -38,7 +38,10 @@ if (!appDir) die('找不到宿主 app 目录（需要含 src/plugin-loader.js）
 
 const backupDir = path.join(appDir, `_backup_${stamp}`);
 const plan = [];
-let changed = 0, skipped = 0, failed = 0;
+let changed = 0, skipped = 0, failed = 0, planned = 0;
+
+/** 计数：演练模式记 planned，真跑记 changed（否则 --dry-run 也打"完成 N"，会误导人和 CI） */
+function countOk() { if (DRY) planned += 1; else changed += 1; }
 
 function readText(p) { return fs.readFileSync(p, 'utf8'); }
 function eolOf(s) { return s.includes('\r\n') ? '\r\n' : '\n'; }
@@ -159,7 +162,7 @@ function applyManifest(manDir, label) {
     const mark = r.status === 'ok' ? (DRY ? '·' : '[OK]  ') : r.status === 'skip' ? '[SKIP]' : '[ERR] ';
     console.log(`  ${mark} ${r.note}  → ${e.path}`);
     plan.push({ label, path: e.path, kind: e.kind, ...r });
-    if (r.status === 'ok') changed += 1;
+    if (r.status === 'ok') countOk();
     else if (r.status === 'skip') skipped += 1;
     else { failed += 1; if (!DRY) rollbackAndDie(`补丁失败：${e.path}`); }
   }
@@ -196,7 +199,7 @@ function copyComponents() {
       fs.cpSync(src, dst, { recursive: true });
     }
     console.log(`  ${DRY ? '·' : '[OK]  '} ${c.kind}/${c.id} ${c.version || ''}`);
-    changed += 1;
+    countOk();
   }
 }
 
@@ -221,7 +224,9 @@ if (args.adapter) applyManifest(path.join(repo, String(args.adapter)), '官方0.
 if (args.refs) copyRefs(String(args.refs));
 
 console.log('\n' + '='.repeat(56));
-console.log(`完成 ${changed} · 跳过 ${skipped} · 失败 ${failed}`);
+console.log(DRY
+  ? `计划 ${planned} · 跳过 ${skipped} · 失败 ${failed}（演练，未改任何文件）`
+  : `完成 ${changed} · 跳过 ${skipped} · 失败 ${failed}`);
 if (failed) {
   console.log('提示：失败通常是「宿主版本不对」——核心补丁只对 QQ Agent 0.4.8.x 有效；');
   console.log('      官方 0.4 preview 请改用 --adapter adapter-04（两套补丁针对不同宿主，别混用）。');

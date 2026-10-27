@@ -1,0 +1,4 @@
+// 夹具：模拟「该文件已经打过对应补丁」——只保留 marker，供幂等测试。
+onServices
+显式声明出来
+!manifest.toolGuidance

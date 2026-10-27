@@ -37,15 +37,25 @@ jobs:
         run: npm install --no-save eslint@8
       - name: 七道闸 + ESLint（strict：跳过也算失败）
         run: node tools/build-release.mjs --no-zip --strict
-      # 造两个桩宿主，验证 install.mjs 的形态识别与幂等
-      - name: install.mjs 演练（源码树形态）
+      # ── install.mjs 三种形态的演练 ─────────────────────────────────────
+      # ① 只装组件：验证「源码树 / 安装版」两种宿主形态都能识别（不涉及补丁，空 src 也能过）
+      - name: install.mjs 演练（源码树形态 · 只装组件）
         run: |
           mkdir -p /tmp/host-src/src && touch /tmp/host-src/src/plugin-loader.js
           node tools/install.mjs --app /tmp/host-src --components --dry-run
-      - name: install.mjs 演练（安装版形态 + 补丁）
+
+      - name: install.mjs 演练（安装版形态 · 只装组件）
         run: |
           mkdir -p /tmp/host-app/resources/app/src && touch /tmp/host-app/resources/app/src/plugin-loader.js
-          node tools/install.mjs --app /tmp/host-app --components --patch patch --dry-run
+          node tools/install.mjs --app /tmp/host-app --components --dry-run
+
+      # ② 幂等：对着「每个目标文件都已含自己 marker」的夹具跑补丁 → 必须 18 全 SKIP、退出码 0
+      #    （这里刻意**不用空 src**：空 src 上跑补丁本来就该失败，用它当"通过"是假绿）
+      - name: install.mjs 幂等（补丁已打过 → 全 SKIP）
+        run: |
+          set -o pipefail
+          node tools/install.mjs --app tools/fixtures/host-patched --patch patch --dry-run | tee /tmp/patch.log
+          grep -q "跳过 18" /tmp/patch.log
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

@@ -10,9 +10,15 @@ const targets = ['components', 'tools', 'patch', 'adapter-04']
   .map((d) => path.join(repo, d))
   .filter((d) => exists(d));
 
-// ⚠️ `*/snippets/*.js` 是**代码片段**（插进宿主文件的半截语句），不是独立模块 ——
-//    直接 node --check 必然报错。它们由 install.mjs 的锚点插入负责校验（插入后宿主能过语法检查）。
-const isFragment = (p) => p.split(/[\\/]/).includes('snippets') || p.endsWith('.deprecated');
+// ⚠️ 两类要排除：
+//   · `*/snippets/*.js` 是**代码片段**（插进宿主文件的半截语句），不是独立模块 —— 由 install.mjs 的锚点插入负责校验
+//   · `tools/fixtures/**` 是**夹具**（桩宿主 / 幂等测试用的 marker 文件），本来就不是可执行代码
+const isFragment = (p) => {
+  const seg = p.split(/[\\/]/);
+  return seg.includes('snippets')
+    || p.endsWith('.deprecated')
+    || (seg.includes('tools') && seg.includes('fixtures'));
+};
 
 const files = targets.flatMap((d) => walkJs(d)).filter((p) => !isFragment(p));
 const bad = [];
