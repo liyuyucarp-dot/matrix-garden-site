@@ -1,0 +1,174 @@
+{
+  "id": "travel-whale",
+  "name": "矩阵庭院",
+  "settingsUi": { "id": "main", "label": "自动化", "file": "settings-ui.js" },
+  "version": "4.4.6",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "矩阵庭院：养一只小鲸鱼，喂它出门旅行，它会从世界各地寄回明信片（题字+配图+感想），带回特产，收集图鉴与称号。★ 货币是 TOKEN（记作「N 亿 TOKEN」）。目的地从内置城市池（21 地区 / 175 组 / 1079 个目的地，其中 12 个是异世界）挑选，也可让模型自由发挥。★ 出发时有小概率「穿越」—— 被丢到一个还没解锁的异世界，她会即兴演一段倒霉反应。★ 鲸鱼只养在指定的一个群（「家」），但它寄回的明信片可以**同时投递到多个群和私聊** —— 养在哪儿与寄给谁是两件独立的事，都能在设置里配。",
+  "author": "QQ Agent",
+  "enabledByDefault": false,
+  "requires": [],
+  "settings": {
+    "whaleName": "小鲸鱼",
+    "homeChatKey": "",
+    "cardTargets": "",
+    "whitelist": "",
+    "baiduApiKey": "",
+    "baiduFreePerDay": 50,
+    "webSummaryFreePerDay": 100,
+    "allowPaid": false,
+    "autoHarvest": true,
+    "autoTend": true,
+    "autoTendGapMin": 30,
+    "autoInvite": true,
+    "autoInviteGapHours": 72,
+    "autoSpendWeeklyCap": 0,
+    "autoSpend": true,
+    "autoSpendMin": 150,
+    "autoSpendKeep": 200,
+    "autoSpendKeepPct": 20,
+    "autoSpendMax": 2,
+    "autoSpendGapHours": 3,
+    "sideWishEnabled": true,
+    "minIntervalMs": 1100,
+    "searchTopK": 8,
+    "tickMs": 60000,
+    "imageSize": "1024x1024",
+    "restockHours": 168,
+    "crossOverChance": 0.15,
+    "commentChance": 0.4,
+    "restHoursMin": 10,
+    "restHoursMax": 10,
+    "homeShotHours": 8,
+    "homeShotSize": "1536x1024",
+    "helpImageWidth": 720,
+    "captionModel": "",
+    "testQq": ""
+  },
+  "configSchema": {
+    "sideWishEnabled": {
+      "type": "boolean",
+      "label": "【旅伴申请】允许有号的旅伴申请出门",
+      "description": "打开后：星澄（小书虫）那边写 side-wish.json 时，这一趟会优先把她排进名单 —— **只影响选谁，不改粮/人数/夜间/冷却**。她没有申请、或这个文件不存在时，行为与关掉完全一致。"
+    },
+    "homeChatKey": {
+      "type": "string",
+      "label": "【家】鲸鱼养在哪个群",
+      "description": "★ 只在这一个会话里养鲸鱼 —— 服务器、钱包、图鉴、称号都只属于它；别处调养鲸鱼的工具只会回一句「窝在哪儿」，不改任何数据。留空 = 退回旧行为（每个有存档的群各养一只）。写群号即可（123456789），或 group:123456789。"
+    },
+    "cardTargets": {
+      "type": "string",
+      "label": "【明信片】投递名单（多个用英文逗号分隔）",
+      "description": "这趟旅行寄出的明信片与播报，会**同时**投递到这里列的每一个会话 —— 但它只发生在「家」那一只鲸鱼身上，别处不重复养。**一行填完，多个用英文逗号分隔**：群号直接写（123456789）；私聊写 private:QQ号（private:10001）。例：group:123456789,private:10001,private:10002。「家」永远在名单里（明信片至少寄回家）。留空 = 只发回家。⚠️ 新版设置页把多行框压成了单行（换行已经输不进去），所以请用逗号；旧的换行写法解析仍然认，但界面上会挤成一坨。图片只生成一次、多目标复用，多播**不额外花钱**，只是多几条消息。"
+    },
+    "whaleName": {
+      "type": "string",
+      "label": "鲸鱼的名字",
+      "description": "明信片里它对自己的称呼。默认「小鲸鱼」。"
+    },
+    "whitelist": {
+      "type": "string",
+      "label": "参与会话名单（只影响提示词，多个用英文逗号分隔）",
+      "description": "★ 鲸鱼现在**只养在「家」那一个群**（见上面那条「【家】鲸鱼养在哪个群」）—— 这份名单已经不再决定「能不能养」了，只影响**提示词**：名单里的会话会被告知「鲸鱼养在别处」，免得她张口就答应「好呀给你养一只」。**一行填完，多个用英文逗号分隔**（同样因为新版设置页输不进换行）。留空 = 其它群/私聊完全静默、不占 token。"
+    },
+    "baiduApiKey": {
+      "type": "string",
+      "secret": true,
+      "label": "百度千帆 API Key（可选）",
+      "description": "填了就优先用百度搜索查景点/特产（质量明显好于 Bing）。留空会回退到「设置页→搜索服务」里配置的百度 Key；再没有就只能用 Bing（免 Key，但结果较粗糙）。"
+    },
+    "baiduFreePerDay": {
+      "type": "number",
+      "label": "百度搜索每日免费额度",
+      "description": "官方是 1500 次/月（约 50/天）。用满后**自动降级**到下一级，不会自动扣费。默认 50。"
+    },
+    "webSummaryFreePerDay": {
+      "type": "number",
+      "label": "智能搜索生成高性能版每日免费额度",
+      "description": "官方是 100 次/天。用满后降级到 Bing。默认 100。"
+    },
+    "allowPaid": {
+      "type": "boolean",
+      "label": "允许超出免费额度后付费",
+      "description": "默认关闭：免费额度用满就降级到 Bing，**不产生任何费用**。打开后会用满后再继续调百度（按次计费，约 ¥0.036/次）。"
+    },
+    "minIntervalMs": {
+      "type": "number",
+      "label": "两次搜索最小间隔（毫秒）",
+      "description": "千帆默认限流 1QPS，并发会直接报 RATE_LIMIT。默认 1100（比 1 秒留一点余量），不要低于 1000。"
+    },
+    "searchTopK": {
+      "type": "number",
+      "label": "每次搜索取几条结果",
+      "description": "取太多会拖慢抽取、也更容易引入噪音。默认 8。"
+    },
+    "tickMs": {
+      "type": "number",
+      "label": "后台检查间隔（毫秒）",
+      "description": "多久检查一次「该寄明信片了吗 / 该回家了吗 / 该出发了吗」。默认 60000（1 分钟）。"
+    },
+    "imageSize": {
+      "type": "string",
+      "label": "明信片图片尺寸",
+      "description": "传给文生图接口的 size。默认 1024x1024。"
+    },
+    "restockHours": {
+      "type": "number",
+      "label": "货架补货间隔（小时）",
+      "description": "货架被买空后，每隔多少小时自动补满。默认 168（7 天）。调小会让商品更容易买到，调大会让商品更稀缺。"
+    },
+    "crossOverChance": {
+      "type": "number",
+      "label": "【穿越】出发时被丢到异世界的概率",
+      "description": "每次出发时有这么大概率**不按装备走**，而是被随机丢到一个**还没解锁的异世界**去一趟（她会即兴演一段倒霉反应，回家时间不变）。默认 0.15（15%）。★ 候选只从「没解锁」的异世界里挑 —— **全部解锁后就再也不会穿越**（买齐 = 免疫）。填 0 可直接关闭这个玩法。⚠️ **点名要去某地的那趟不穿越**（她是被派去的，半路被丢到别处只会让人困惑）—— 所以想看到她穿越，别在「出门」时指定目的地：说「出门吧」「你想去哪就去哪」，让她自己挑。"
+    },
+    "commentChance": {
+      "type": "number",
+      "label": "【明信片】留守旅伴来评论的概率",
+      "description": "每寄出一张明信片（途中卡、到家卡都算），有这么大概率**随机挑一位这趟没同行的旅伴**，用她自己的口吻给这张卡留一句评论发到群里 —— 像在空间里留言那样。默认 0.4（约四成）。★ 只挑**留守**的：只请了一位伙伴、而她正跟着出门时，就没人可评（自动跳过）。⚠️ 每次评论＝一次模型调用。填 0 关闭。"
+    },
+    "restHoursMin": {
+      "type": "number",
+      "label": "【在家】回家后最短休息几小时",
+      "description": "★ 给「家」存在感用。她回家播报完之后，至少在家待这么多小时才会**自己**再出门（两种自动出门都算：她自己那趟、以及留在家的伙伴自己跑出去玩那趟）。默认 10 小时（2026-10-18 从 24 下调）。⚠️ 填小了就会出现「刚回家就想走」；填 0 或留空会被当成没配（仍用默认值），不会变成「立刻出门」。手动说「让它去旅行」不受这个限制。"
+    },
+    "restHoursMax": {
+      "type": "number",
+      "label": "【在家】回家后最长休息几小时",
+      "description": "回家后休息时间的上界，实际值在「最短~最长」之间随机取。默认 10 小时（与最短相同 ⇒ 每次正好歇 10 小时）；想有随机性就把这里调大。必须大于「最短」，否则会被兜底成默认上界。"
+    },
+    "homeShotHours": {
+      "type": "number",
+      "label": "【在家】待满几小时后拍大合照",
+      "description": "★ 给「家」存在感用（大更新 step4）：她回到家、并且**在家待满**这么多小时后，会和**所有在家的 AI 娘**（她自己 + 已邀请的全部旅伴）拍 **1 张**横板大合照（举着镜头自拍的感觉，背景是能看见星星的矩阵庭院），照样寄到明信片投递名单里、也进相册。默认 8 小时；每趟回家只拍一张。⚠️ **填 0 = 关掉这个玩法**（留空/填错仍用默认 8）。夜里（0~7 点）不拍。"
+    },
+    "homeShotSize": {
+      "type": "string",
+      "label": "【在家】大合照的画幅",
+      "description": "合照是**横板**，与旅行明信片的方板（见上面「明信片图片尺寸」，默认 1024x1024）刻意不同。默认 1536x1024（宽大于高）。填中转站支持的其他横板尺寸也可以。"
+    },
+    "helpImageWidth": {
+      "type": "number",
+      "label": "玩法说明图宽度（像素）",
+      "description": "「鲸鱼帮助」那张说明图的宽度。默认 720。图是自动排版的两栏卡片，太窄会挤、太宽放到手机上会糊，一般不用改。"
+    },
+    "testQq": {
+      "type": "string",
+      "label": "快速测试白名单（QQ 号）",
+      "description": "只有这些 QQ 号能触发「矩阵庭院快速测试」（10 分钟迷你旅行：第 5 分钟寄明信片，第 10 分钟回家带特产）。多个用英文逗号分隔。这个测试不消耗口粮、不花钱。"
+    }
+  },
+  "prompt": {
+    "sections": []
+  },
+  "triggers": {
+    "when": "群友提到养的小鲸鱼去哪了、收 TOKEN、让它出门旅行、看明信片和称号",
+    "examples": [
+      "鲸鱼去哪了",
+      "收一下 TOKEN",
+      "让它出门吧",
+      "看看它寄回来的照片"
+    ]
+  }
+}

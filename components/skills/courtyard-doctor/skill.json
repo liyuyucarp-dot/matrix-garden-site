@@ -1,0 +1,23 @@
+{
+  "id": "courtyard-doctor",
+  "name": "庭院体检",
+  "version": "1.0.2",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "一键体检矩阵庭院各组件：核心补丁、家/主人配置一致性、可信权限、禁言与风控、外部凭据存在性、昨夜日记。只读、不联网、不写文件。",
+  "author": "local",
+  "enabledByDefault": true,
+  "capabilities": [],
+  "requires": [],
+  "settings": {
+    "enabled": true
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用庭院体检",
+      "description": "只读诊断工具，不联网不出网；关掉只是模型看不到这个工具。"
+    }
+  },
+  "prompt": null
+}

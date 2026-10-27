@@ -1,0 +1,88 @@
+{
+  "pack": "character-refs",
+  "version": "2.2.8",
+  "total_bytes": 1597693,
+  "note": "角色图不随主仓库分发。自备同名文件放 data/skills/travel-whale/refs/，或用 tools/link-refs.mjs 从本地目录链接。",
+  "files": [
+    {
+      "file": "claude--pro.jpg",
+      "bytes": 239139,
+      "sha256": "9fba4deff81dbb30b5d4396cc5bba238c916c64cdb76ce848877d0ab1610926d"
+    },
+    {
+      "file": "claude--q.jpg",
+      "bytes": 63112,
+      "sha256": "23a4a845cc2d152e24023815a55dd5d534bae09b078cee97aa05ee9133cb1b91"
+    },
+    {
+      "file": "fox--pro.jpg",
+      "bytes": 51102,
+      "sha256": "84dd168363d1e8519a3584a39702a22acd6613f70a06a4e94eb4bbfa768bf40b"
+    },
+    {
+      "file": "fox--q.jpg",
+      "bytes": 52349,
+      "sha256": "8d21c786bdb9c0f69ab0b90a19e2496600bdd1bcc5d1714eb74564c5c16e2b61"
+    },
+    {
+      "file": "gemini--pro.jpg",
+      "bytes": 71929,
+      "sha256": "07fd7b095645139c56eb6ba3cde24c92b6ad3e0fa249b1e892517c8d86285eb5"
+    },
+    {
+      "file": "gemini--q.jpg",
+      "bytes": 59129,
+      "sha256": "979636b4177fffa3dfa0ad4da9f7afb6e3f8220c3280bf39ab4577873463b290"
+    },
+    {
+      "file": "gpt--pro.jpg",
+      "bytes": 188727,
+      "sha256": "9ba7c42d871cab698b1587b8565e199b55776972612f501407f1ced69fa7b2d0"
+    },
+    {
+      "file": "gpt--q.jpg",
+      "bytes": 62619,
+      "sha256": "09404ad1dd6f5c8dcec02631c2c335f550d901722e19bea739dee9f68267048e"
+    },
+    {
+      "file": "grok--pro.jpg",
+      "bytes": 197563,
+      "sha256": "b99c54f499fa003913a6422d78eae16da91c72b0c1e362490c0e6b070780a6d0"
+    },
+    {
+      "file": "grok--q.jpg",
+      "bytes": 82096,
+      "sha256": "912c778db18e89222be344584ed384ee6bf99e4d46dc05a359890ac2ebf58542"
+    },
+    {
+      "file": "kimi--pro.jpg",
+      "bytes": 45778,
+      "sha256": "5c58a321cb9ed01fd00038ebd5ec83f120f7eb4a6e73a991ce2bc5041dcaf4d2"
+    },
+    {
+      "file": "kimi--q.jpg",
+      "bytes": 60881,
+      "sha256": "400098d56a0135703fef496005848dd0a1988ad36af0d0138816dd819bef72b1"
+    },
+    {
+      "file": "qwen--pro.jpg",
+      "bytes": 65350,
+      "sha256": "e2242ce9de993b5d99720a4cefcce1b7f0ea0818438edeb1f7f4802c46f0835f"
+    },
+    {
+      "file": "qwen--q.jpg",
+      "bytes": 60860,
+      "sha256": "961a2d67d0ec5bcb4c34cc87a386516317f36eaf33641d660b3dfb24054ae07f"
+    },
+    {
+      "file": "whale--pro.jpg",
+      "bytes": 160944,
+      "sha256": "cf29f3f23bda767711a978f2b64b61efc1d8ab6cc3e56103e00f3d9593c57f86"
+    },
+    {
+      "file": "whale--q.jpg",
+      "bytes": 136115,
+      "sha256": "7db62f3586274477d8e5660942f6732ffe13cdc0f581e7819a76d3e48024e34e"
+    }
+  ]
+}

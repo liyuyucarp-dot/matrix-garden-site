@@ -1,0 +1,399 @@
+{
+  "note": "地点特征表：键 = `<regionId>|<组名>`（与 regions.json 的 countries[].name 一致），值 = 该组**缺**哪些特征。**只登记缺特征的组**；未登记 = 按常规地貌处理（有水、有植被、有人烟）。 ★ 2026-10-13 起支持**三层**：① `missing`（组级，键 `<regionId>|<组名>`）；② `missingCity`（城市级，键 `<regionId>|<城市名>`）；③ `folkAbsentRegions` + `folkPresentCities`（以荒野为主的异世界**默认没有人烟**）。特征值现为 water / green / folk / built。",
+  "why": "状态池里有一批条目会**断言**目的地有某种东西：『扶着栏杆看河水』『赶在退潮时去海边』『被一圈当地人围着看』『泡酒馆打听消息』。可有些地方根本没有 —— 用户 2026-10-12 点名：『查尔那儿已经是个虫巢星球了，除了虫子、石头就是岩浆，哪来的河和海呢？』『查尔甚至没有本地人——那儿只有虫子和虫子。』在岩浆星球上看海、在虫巢星球上跟摊主讨价还价，是**凭空造地形**，比措辞粗糙严重得多。",
+  "vocabulary": {
+    "water": "有自然水体或降水：河 / 海 / 湖 / 井 / 泉 / 汤池 / 雨",
+    "green": "有植被：草地 / 树林 / 花田",
+    "folk": "有可打交道的本地居民及其市井：市集 / 酒馆 / 店铺 / 旅店 / 能问路 / 能被请饭",
+    "built": "有人工造物：城墙 / 城门 / 石阶 / 石碑 / 废墟 / 灯柱 / 招牌 / 楼梯（**只要求\"有东西\"，不要求\"有人\"** —— 有市井的地方必然也有它）"
+  },
+  "policy": "★★ **存疑就标进去**。两个方向的代价不对称：标错 ⇒ 她只是少说一句水、少提一次市集（看不出问题）；不标 ⇒ 她在岩浆星球上看海、在虫巢星球上买东西（一眼假）。所以宁可保守。",
+  "maintenance": "改完跑 `node _qcheck/place-trait-probe.mjs`（校验键对得上 regions.json、特征名合法、以及每个缺 water 的组确实没有水体字样）。",
+  "missing": {
+    "gundam|月面都市": [
+      "water",
+      "green"
+    ],
+    "gundam|宇宙殖民地": [
+      "water",
+      "green"
+    ],
+    "gundam|宇宙要塞": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "starcraft|虫群领域": [
+      "water",
+      "green",
+      "folk",
+      "built"
+    ],
+    "warhammer40k|巴尔星系": [
+      "water",
+      "green"
+    ],
+    "warhammer40k|美杜莎星系": [
+      "water",
+      "green"
+    ],
+    "warhammer40k|太阳系": [
+      "water",
+      "green"
+    ],
+    "warhammer40k|网道": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "warhammer40k|亚空间": [
+      "water",
+      "green",
+      "folk",
+      "built"
+    ],
+    "middleearth|摩瑞亚": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "middleearth|魔多": [
+      "green"
+    ],
+    "westeros|多恩": [
+      "green"
+    ],
+    "hyrule|鼓隆": [
+      "water",
+      "green"
+    ],
+    "hyrule|利特": [
+      "water",
+      "green"
+    ],
+    "hyrule|格鲁德": [
+      "green"
+    ],
+    "touhou|月面": [
+      "water",
+      "green"
+    ],
+    "touhou|幻想乡地底": [
+      "water",
+      "green"
+    ],
+    "landsbetween|巨人山顶": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "landsbetween|永恒之城": [
+      "water",
+      "green"
+    ],
+    "landsbetween|天空之城": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "landsbetween|深根底层": [
+      "water",
+      "green",
+      "folk"
+    ],
+    "faerun|幽暗地域": [
+      "water",
+      "green"
+    ],
+    "mysteries|非凡领域": [
+      "water",
+      "green",
+      "folk",
+      "built"
+    ]
+  },
+  "missingCity": {
+    "middleearth|奥斯吉力亚斯": [
+      "folk"
+    ],
+    "middleearth|米那斯伊希尔": [
+      "folk"
+    ],
+    "middleearth|海尔姆深谷": [
+      "folk"
+    ],
+    "middleearth|木精灵王宫": [
+      "folk"
+    ],
+    "middleearth|多古尔都": [
+      "folk"
+    ],
+    "middleearth|欧尔桑克": [
+      "folk"
+    ],
+    "middleearth|巴拉多": [
+      "folk"
+    ],
+    "middleearth|米那斯魔窟": [
+      "folk"
+    ],
+    "middleearth|末日火山": [
+      "folk"
+    ],
+    "westeros|黑城堡": [
+      "folk"
+    ],
+    "westeros|赫伦堡": [
+      "folk"
+    ],
+    "westeros|鹰巢城": [
+      "folk"
+    ],
+    "westeros|月门堡": [
+      "folk"
+    ],
+    "westeros|风息堡": [
+      "folk"
+    ],
+    "westeros|流水花园": [
+      "folk"
+    ],
+    "westeros|龙石岛": [
+      "folk"
+    ],
+    "westeros|派克城": [
+      "folk"
+    ],
+    "westeros|凯岩城": [
+      "folk"
+    ],
+    "westeros|奔流城": [
+      "folk"
+    ],
+    "westeros|高庭": [
+      "folk"
+    ],
+    "westeros|孪河城": [
+      "folk"
+    ],
+    "teyvat|风起地": [
+      "folk"
+    ],
+    "teyvat|望舒客栈": [
+      "folk"
+    ],
+    "teyvat|绝云间": [
+      "folk"
+    ],
+    "teyvat|神里屋敷": [
+      "folk"
+    ],
+    "teyvat|珊瑚宫": [
+      "folk"
+    ],
+    "teyvat|化城郭": [
+      "folk"
+    ],
+    "teyvat|梅洛彼得堡": [
+      "folk"
+    ],
+    "teyvat|至冬宫": [
+      "folk"
+    ],
+    "azeroth|幽暗城": [
+      "folk"
+    ],
+    "azeroth|斯坦索姆": [
+      "folk"
+    ],
+    "azeroth|冰冠堡垒": [
+      "folk"
+    ],
+    "azeroth|龙骨荒野": [
+      "folk"
+    ],
+    "azeroth|锦绣谷": [
+      "folk"
+    ],
+    "azeroth|地狱火半岛": [
+      "folk"
+    ],
+    "hyrule|海拉鲁城堡": [
+      "folk"
+    ],
+    "hyrule|初始台地": [
+      "folk"
+    ],
+    "hyrule|海拉鲁平原": [
+      "folk"
+    ],
+    "hyrule|死亡之山": [
+      "folk"
+    ],
+    "hyrule|卓拉大桥": [
+      "folk"
+    ],
+    "faerun|烛堡": [
+      "folk"
+    ],
+    "faerun|密银厅": [
+      "folk"
+    ],
+    "faerun|埃弗拉斯卡": [
+      "folk"
+    ],
+    "faerun|拉什曼": [
+      "folk"
+    ],
+    "mysteries|霍纳奇斯山脉": [
+      "folk"
+    ],
+    "mysteries|拉姆德古堡": [
+      "folk"
+    ],
+    "mysteries|金秋湖": [
+      "folk"
+    ],
+    "mysteries|廷根湖": [
+      "folk"
+    ],
+    "mysteries|霍伊大学图书馆": [
+      "folk"
+    ],
+    "mysteries|紫藤花廊": [
+      "folk"
+    ],
+    "europe|北角": [
+      "folk"
+    ],
+    "europe|少女峰": [
+      "folk"
+    ],
+    "europe|杰古沙龙冰河湖": [
+      "folk"
+    ],
+    "europe|黄金圈": [
+      "folk"
+    ],
+    "europe|蓝湖": [
+      "folk"
+    ],
+    "arctic|弗兰格尔岛": [
+      "folk"
+    ],
+    "arctic|新奥尔松": [
+      "folk"
+    ],
+    "arctic|巴伦支堡": [
+      "folk"
+    ],
+    "arctic|斯瓦尔巴": [
+      "folk"
+    ],
+    "arctic|格里姆塞岛": [
+      "folk"
+    ],
+    "arctic|北角": [
+      "folk"
+    ],
+    "indian|阿里环礁": [
+      "folk"
+    ],
+    "indian|芭环礁": [
+      "folk"
+    ],
+    "indian|康杜玛": [
+      "folk"
+    ],
+    "africa|索苏斯维利": [
+      "folk"
+    ],
+    "africa|达纳基尔": [
+      "folk"
+    ],
+    "africa|马赛马拉": [
+      "folk"
+    ],
+    "africa|安博塞利": [
+      "folk"
+    ],
+    "africa|察沃": [
+      "folk"
+    ],
+    "africa|纳库鲁湖": [
+      "folk"
+    ],
+    "africa|奈瓦沙湖": [
+      "folk"
+    ],
+    "africa|塞伦盖蒂": [
+      "folk"
+    ],
+    "africa|乞力马扎罗": [
+      "folk"
+    ],
+    "africa|恩戈罗恩戈罗": [
+      "folk"
+    ],
+    "africa|曼雅拉湖": [
+      "folk"
+    ],
+    "africa|鲁阿哈": [
+      "folk"
+    ],
+    "americas|阿塔卡马沙漠": [
+      "folk"
+    ],
+    "americas|百内国家公园": [
+      "folk"
+    ],
+    "americas|马丘比丘": [
+      "folk"
+    ],
+    "americas|纳斯卡": [
+      "folk"
+    ],
+    "americas|潘塔纳尔": [
+      "folk"
+    ],
+    "oceania|乌鲁鲁": [
+      "folk"
+    ],
+    "asia|安纳普尔纳": [
+      "folk"
+    ],
+    "pacific|帕尔迈拉": [
+      "folk"
+    ],
+    "oceania|洛克群岛": [
+      "folk"
+    ],
+    "touhou|静海": [
+      "built"
+    ]
+  },
+  "folkAbsentRegions": [
+    "touhou",
+    "landsbetween",
+    "warhammer40k",
+    "starcraft"
+  ],
+  "folkPresentCities": [
+    "starcraft|克哈四号星",
+    "starcraft|塔桑尼斯",
+    "starcraft|安提加主星",
+    "starcraft|尤摩扬",
+    "starcraft|布拉西斯",
+    "starcraft|新福尔松",
+    "starcraft|玛萨拉",
+    "touhou|人间之里",
+    "warhammer40k|卡迪安",
+    "warhammer40k|康诺",
+    "warhammer40k|神圣泰拉",
+    "warhammer40k|马库拉格"
+  ],
+  "cityLevel_note": "★ 2026-10-13 加。`missingCity` = 城市级\"缺\"（键 `<regionId>|<城市名>`，与组级取并集）；`folkAbsentRegions` = 这些**以荒野为主的异世界**的城市默认\"没有人烟\"，除非在 `folkPresentCities` 白名单里。由 trip.js 的 missingTraitsOf(regionId, country, city) 三层取并集。",
+  "considered_allowed": {
+    "touhou|各乡（**已改由 `folkAbsentRegions` 接管**）": "⚠️ 原写成「有住民可交涉」是**错的口径**——\"能碰上妖怪\"不等于\"有市井、有小孩、有集市\"。用户 2026-10-13 点名：她在**博丽神社**碰到了小孩。现在 touhou 整区默认没有人烟，只有 `folkPresentCities` 里的「人间之里」例外。"
+  }
+}

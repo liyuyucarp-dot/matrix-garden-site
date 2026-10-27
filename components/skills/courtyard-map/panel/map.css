@@ -1,0 +1,528 @@
+/* 庭院与旅程面板（与 /ui 同源；主题由 map.js 写 <html data-theme>）
+ * 2026-10-24 UI 重构：地图页（星轨底图/航线/信标/锁定遮罩/水镜分割带）+ 庭院页（三层 Bento） */
+:root, [data-theme="dark"] {
+  --bg: #0d1117; --panel: #131a24; --card: #1a2230; --line: #2a3442;
+  --ink: #d7e0ea; --ink-dim: #97a4b3; --ink-faint: #6d7c8e;
+  --accent: #6db3f2; --accent-soft: rgba(109, 179, 242, .16);
+  --gold: #e8c476; --gold-hi: #f59e0b; --green: #7fd0a0;
+  --sky: #7dd3fc; --cyan: #22d3ee;
+  --real-bg: rgba(109, 179, 242, .07); --other-bg: rgba(232, 196, 118, .07);
+}
+[data-theme="light"] {
+  --bg: #f4f6f9; --panel: #ffffff; --card: #ffffff; --line: #dde3ea;
+  --ink: #25313d; --ink-dim: #5c6b7a; --ink-faint: #8391a0;
+  --accent: #2f7fd1; --accent-soft: rgba(47, 127, 209, .10);
+  --gold: #b8860b; --gold-hi: #b45309; --green: #2e9e63;
+  --sky: #0284c7; --cyan: #0891b2;
+  --real-bg: rgba(47, 127, 209, .06); --other-bg: rgba(184, 134, 11, .07);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 13px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  display: flex; flex-direction: column; min-height: 0; max-height: 100%;
+}
+
+/* ── 顶栏 ── */
+.hd {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+  background: var(--panel); border-bottom: 1px solid var(--line); flex: 0 0 auto;
+}
+.hd__title { font-size: 15px; margin: 0; letter-spacing: .5px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  border: 1px solid transparent; background: none; color: var(--ink-dim);
+  padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.tab:hover { color: var(--ink); background: var(--accent-soft); }
+.tab--on { color: var(--accent); background: var(--accent-soft); border-color: var(--line); }
+.hd__spacer { flex: 1; }
+.hd__meta { color: var(--ink-faint); font-size: 12px; }
+.btn {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border-radius: 8px; padding: 3px 10px; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+
+main { flex: 1 1 auto; overflow: auto; min-height: 0; padding: 12px 14px; }
+.page { display: none; }
+.page--on { display: block; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px;
+}
+.card h2 { margin: 0 0 8px; font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+.card h2 .hdim { font-size: 11px; color: var(--ink-faint); font-weight: 400; margin-left: 6px; }
+
+/* ── 通用：旅伴内联胶囊徽章（杜绝裸括号 + 折行断裂）── */
+.mate-badge {
+  display: inline-flex; align-items: center;
+  padding: 1px 8px; border-radius: 999px; font-size: 12px;
+  background: rgba(56, 189, 248, 0.14); color: #7dd3fc;
+  margin-left: 6px; white-space: nowrap; vertical-align: middle;
+}
+[data-theme="light"] .mate-badge { color: #0369a1; background: rgba(2, 132, 199, 0.10); }
+
+/* ── 通用：近况两列网格（时间戳列固定宽，不再上下断行）── */
+.feed2 { display: grid; grid-template-columns: 88px 1fr; gap: 12px; align-items: baseline; }
+.feed2 .t {
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: #64748b; font-size: 12px;
+}
+[data-theme="light"] .feed2 .t { color: #64748b; }
+.feed2 .tx { min-width: 0; font-size: 12.5px; line-height: 1.7; }
+.feed2 .tx.dim { color: var(--ink-faint); }
+.feed2 .detail { color: var(--ink-dim); display: block; font-size: 12px; }
+.kv { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding: 1px 0; }
+.kv b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kv span { color: var(--ink-dim); white-space: nowrap; }
+
+/* ══ 地图页 ══ */
+#page-map { display: none; }
+#page-map.page--on { display: flex; gap: 12px; align-items: flex-start; }
+.map-wrap { flex: 1 1 auto; overflow: auto; min-width: 0; }
+.map-fit { overflow: hidden; }
+.map-canvas {
+  position: relative; width: 1000px; height: 640px;
+  background: var(--panel);
+  /* 星轨点阵底图（很淡，只做海洋质感 —— 陆地质感由 .world-dots 承担） */
+  background-image: radial-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+  border: 1px solid var(--line); border-radius: 12px;
+  transform-origin: 0 0;
+}
+[data-theme="light"] .map-canvas {
+  background-image: radial-gradient(rgba(100, 116, 139, 0.10) 1px, transparent 1px);
+}
+
+/* 星轨航线（覆盖在区域之上的虚线轨迹） */
+.route-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 3;
+}
+/* 点阵世界地图底图（现实世界带，格线与 ZONES 大陆块大致对位） */
+.world-dots {
+  position: absolute; left: 0; top: 0; width: 100%; height: 470px;
+  pointer-events: none; z-index: 0;
+}
+.world-dots circle { fill: rgba(148, 163, 184, .42); }
+[data-theme="light"] .world-dots circle { fill: rgba(100, 116, 139, .45); }
+
+/* 水镜之门分割带（现实/异世界的青蓝微光渐变） */
+.mirror-divider {
+  position: absolute; left: 14px; right: 14px; top: 470px; height: 26px;
+  display: flex; align-items: center; gap: 12px; z-index: 2; user-select: none;
+}
+.mirror-divider::before, .mirror-divider::after {
+  content: ''; flex: 1; height: 2px; border-radius: 2px;
+}
+.mirror-divider::before { background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.35)); }
+.mirror-divider::after { background: linear-gradient(90deg, rgba(34, 211, 238, 0.35), transparent); }
+.mirror-gate {
+  color: var(--cyan); font-size: 12px; letter-spacing: 6px; white-space: nowrap;
+  text-shadow: 0 0 12px rgba(34, 211, 238, .75);
+}
+
+/* 区域卡 */
+.zone {
+  position: absolute; border-radius: 10px; z-index: 1;
+  border: 1px solid rgba(109, 179, 242, .30);
+  background: var(--real-bg);
+}
+[data-theme="light"] .zone { border-color: rgba(47, 127, 209, .28); }
+.zone--other { background: var(--other-bg); border-style: dashed; border-color: rgba(232, 196, 118, .38); }
+[data-theme="light"] .zone--other { border-color: rgba(184, 134, 11, .40); }
+.zone__name {
+  position: absolute; left: 8px; top: 6px; font-size: 11.5px; color: var(--ink-dim);
+  letter-spacing: 1px; user-select: none; z-index: 2;
+}
+.zone--has .zone__name { color: var(--ink); font-weight: 600; }
+/* 大洲英文水印（消纯黑空盒感） */
+.zone__wm {
+  position: absolute; right: 8px; bottom: 2px; font-size: 28px; font-weight: 800;
+  letter-spacing: 2px; color: #94a3b8; opacity: .06; white-space: nowrap;
+  pointer-events: none; user-select: none;
+}
+.zone--active .zone__wm { color: var(--gold-hi); opacity: .10; }
+
+/* 在途区域：金色高亮 */
+.zone--active {
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  box-shadow: inset 0 0 24px rgba(245, 158, 11, 0.08), 0 0 14px rgba(245, 158, 11, .10);
+}
+
+/* 未到访区域：斜纹暗遮罩 + 锁 + 解锁装备提示 */
+.zone--locked {
+  background:
+    repeating-linear-gradient(-45deg, rgba(148, 163, 184, .055) 0 6px, transparent 6px 12px);
+  border-style: dashed; border-color: rgba(148, 163, 184, .22);
+}
+[data-theme="light"] .zone--locked { border-color: rgba(100, 116, 139, .30); }
+.zone--locked .zone__wm { opacity: .04; }
+/* 已解锁待启程：不再是"锁"，虚线空格 + 出发 invites（2026-10-24 主人口径：
+   美洲等现实区是"没去过但已解锁"，不该长得像上锁） */
+.zone--open { border-style: dashed; border-color: rgba(148, 163, 184, .30); background: transparent; }
+.zone--open.zone--other { border-color: rgba(232, 196, 118, .38); }
+.zone--open .zone__wm { opacity: .05; }
+.zone__body {
+  position: absolute; inset: 0; padding: 26px 10px 8px;
+  display: flex; flex-wrap: wrap; gap: 6px 12px;
+  align-content: flex-start; align-items: flex-start;
+  overflow: hidden;
+}
+.zone--locked .zone__body, .zone--open .zone__body, .zone--mystery .zone__body {
+  flex-direction: column; flex-wrap: nowrap;
+  align-items: center; justify-content: center; gap: 4px; padding: 26px 8px 8px;
+}
+.zone__go { font-size: 16px; line-height: 1; opacity: .55; }
+.zone__lock { font-size: 20px; opacity: .55; filter: grayscale(.25); line-height: 1; }
+.zone__hint {
+  font-size: 10.5px; color: var(--ink-faint); white-space: nowrap;
+  background: rgba(13, 17, 23, .55); padding: 1px 9px; border-radius: 999px;
+}
+[data-theme="light"] .zone__hint { background: rgba(255, 255, 255, .6); }
+/* 去过但未解锁（如穿越到过的明日方舟）：has 态 + 右上角标 */
+.zone__flag {
+  position: absolute; right: 8px; top: 5px; z-index: 2;
+  font-size: 10px; color: var(--gold);
+  border: 1px dashed rgba(232, 196, 118, .55); border-radius: 999px; padding: 0 7px;
+  user-select: none;
+}
+/* 未揭示的世界：？？？ 占位（异世界分批揭示，UI 留位不剧透） */
+.zone--mystery { border: 1px dashed rgba(148, 163, 184, .20); background: transparent; }
+.zone__q { font-size: 14px; letter-spacing: 4px; color: var(--ink-faint); opacity: .7; line-height: 1.2; }
+
+/* 城市节点（横向流式）与在途信标 */
+.node { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; }
+.node__dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px;
+  background: var(--accent); opacity: .62;
+}
+.node--hot .node__dot { opacity: 1; box-shadow: 0 0 0 3px var(--accent-soft); }
+.node__label {
+  font-size: 11.5px; color: var(--ink); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 86px; line-height: 1.4;
+}
+.node__n {
+  font-size: 9.5px; color: var(--accent); background: var(--accent-soft);
+  border-radius: 999px; padding: 0 5px; line-height: 1.5; white-space: nowrap;
+  align-self: flex-start; margin-top: -3px;   /* ×N 右上角微缩角标 */
+}
+.node--cur .node__label { color: var(--gold); font-weight: 600; }
+/* 当前所在：金色双圈呼吸雷达信标 */
+.node--cur .node__dot {
+  position: relative; background: var(--gold-hi); opacity: 1;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, .25), 0 0 10px rgba(245, 158, 11, .5);
+}
+.node--cur .node__dot::before, .node--cur .node__dot::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 9px; height: 9px; margin: -5.5px 0 0 -5.5px; border-radius: 50%;
+  border: 2px solid rgba(245, 158, 11, .65);
+  animation: radar-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+.node--cur .node__dot::after { animation-delay: 1.2s; }
+@keyframes radar-pulse {
+  0% { transform: scale(.6); opacity: 1; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+/* 同行旅伴徽章 + 旅伴自游徽章（当前区域右下角；图标口径） */
+.zone__mates { position: absolute; right: 8px; bottom: 6px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; z-index: 2; }
+.zone__mates .mchip {
+  font-size: 11px; padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+  background: rgba(56, 189, 248, .14); color: #7dd3fc;
+}
+[data-theme="light"] .zone__mates .mchip { color: #0369a1; }
+.mchip--side { background: rgba(127, 208, 160, .16); color: var(--green); }
+/* 旅伴自游节点：绿点 = 这位旅伴自己在这儿 */
+.node--side .node__dot {
+  background: var(--green); opacity: .95;
+  box-shadow: 0 0 0 3px rgba(127, 208, 160, .18);
+}
+.mate__dest { font-size: 11px; color: var(--accent); margin-top: 2px; }
+.side-ico { font-size: 12px; margin: 0 2px; }
+
+/* 右侧栏 */
+.side { flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px; }
+.side .place { font-size: 15px; font-weight: 600; margin: 2px 0 4px; }
+.side .dim { color: var(--ink-dim); font-size: 12px; }
+.side .gold { color: var(--gold); font-weight: 600; }
+/* 返程进度条 */
+.trip-progress {
+  height: 6px; border-radius: 999px; background: var(--line);
+  overflow: hidden; margin-top: 8px;
+}
+.trip-progress .bar {
+  height: 100%; border-radius: 999px; min-width: 3%;
+  background: linear-gradient(90deg, rgba(245, 158, 11, .45), #f59e0b);
+  box-shadow: 0 0 8px rgba(245, 158, 11, .4);
+}
+.trip-legend {
+  display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: 10.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.legend { font-size: 11px; color: var(--ink-faint); line-height: 1.9; }
+
+/* ══ 庭院页（三层非对称 Bento）══ */
+/* 第一层：4 张紧凑 KPI 横卡 */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+.kpi {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; min-height: 88px; max-height: 96px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+}
+.kpi__ico {
+  flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.kpi__ico--pond { background: rgba(56, 189, 248, .14); }
+.kpi__ico--wallet { background: rgba(245, 158, 11, .14); }
+.kpi__ico--wardrobe { background: rgba(168, 85, 247, .14); }
+.kpi__ico--titles { background: rgba(127, 208, 160, .14); }
+.kpi__rows { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.kpi__title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.kpi__rows .kv b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 第二层：左设施 320px + 右纪念品墙 */
+.bento-mid { display: grid; grid-template-columns: 320px 1fr; gap: 14px; margin-bottom: 14px; }
+.fac { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.fac:last-child { border-bottom: 0; }
+.fac__name { flex: 0 0 auto; font-size: 12.5px; color: var(--ink); }
+.fac__lv {
+  flex: 0 0 auto; font-size: 10.5px; color: var(--gold); font-weight: 600;
+  border: 1px solid rgba(245, 158, 11, .45); border-radius: 999px; padding: 0 7px; line-height: 1.6;
+}
+.seg { display: flex; gap: 3px; flex: 1; max-width: 130px; margin-left: auto; }
+.seg i { height: 6px; flex: 1; border-radius: 3px; background: var(--line); }
+.seg i.on { background: var(--gold-hi); box-shadow: 0 0 6px rgba(245, 158, 11, .35); }
+/* 纪念品墙（特产图鉴）：稀有度边框 + 微光底色 */
+.wall {
+  display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
+  max-height: 220px; overflow-y: auto;
+}
+.chip {
+  white-space: nowrap; line-height: 1.4; padding: 4px 12px;
+  font-size: 13px; letter-spacing: 0.02em;
+  border-radius: 999px; border: 1px solid #475569;
+  color: var(--ink-dim); background: rgba(71, 85, 105, .10);
+}
+[data-theme="light"] .chip { border-color: rgba(100, 116, 139, .5); }
+.chip--rare {
+  border-color: #f59e0b; color: #f59e0b;
+  background: rgba(245, 158, 11, .10); box-shadow: 0 0 8px rgba(245, 158, 11, .12);
+}
+.chip--uncommon {
+  border-color: #a855f7; color: #a855f7;
+  background: rgba(168, 85, 247, .10); box-shadow: 0 0 8px rgba(168, 85, 247, .10);
+}
+
+/* 第三层：近况通栏 */
+.feed-card { padding: 12px 16px; }
+
+/* ── 身心与好感（Studio 扩容，2026-10-24）：条形读数 ── */
+.vitals-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 860px) { .vitals-row { grid-template-columns: 1fr; } }
+.vitals-row .card { min-height: 0; }
+.vital { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.vital__k { flex: 0 0 44px; font-size: 12px; color: var(--ink-dim); }
+.vital__bar { position: relative; flex: 1; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.vital__bar i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--w, 0%); border-radius: 999px; background: var(--accent); }
+.vital__bar i.hot { background: var(--gold-hi, #f59e0b); }
+.vital__v { flex: 0 0 auto; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* 具身情境 Tag（v2.2.1）：⚡元气之外的第二条轴 —— 显示"为什么"和"还剩多久" */
+.vital-tags { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 6px; }
+.vital-tag { font-size: 12px; line-height: 1.5; color: var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.vital-tag__name { color: var(--accent); }
+.vital-tag__why { color: var(--ink-dim); }
+.vital-tag__left { margin-left: auto; font-size: 11px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.vital-tag.is-bad .vital-tag__name { color: #d95c5c; }
+.vital-tag.is-mixed .vital-tag__name { color: var(--gold-hi, #f59e0b); }
+
+/* ── 旅伴页（图标卡，不用立绘 —— 2026-10-24 主人口径）── */
+.mates { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.mate { display: flex; gap: 10px; align-items: flex-start; }
+.mate__ico {
+  flex: 0 0 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; background: var(--accent-soft); border: 1px solid var(--line);
+}
+.mate__name { font-weight: 600; font-size: 13px; }
+.mate__st { font-size: 11px; margin-top: 2px; }
+.st--traveling { color: var(--gold); }
+.st--home { color: var(--green); }
+.st--side { color: var(--accent); }
+.st--locked { color: var(--ink-faint); }
+/* 未解锁旅伴（2026-10-24）：整卡禁入 —— 降透明度 + 图标去色 + 无交互光标 */
+.mate--locked { opacity: .58; cursor: default; }
+.mate--locked .mate__ico { filter: grayscale(.65); }
+.mate--locked:hover { border-color: var(--line); }
+.st--idle { color: var(--ink-faint); }
+
+/* ── 2026-10-26：旅伴卡变成按钮（点开档案）────────────────────────────────
+   .card 原本是 div 的样式，换成 <button> 后浏览器会带默认边框/背景/字体，这里全部压掉。 */
+button.card.mate {
+  appearance: none; -webkit-appearance: none;
+  width: 100%; margin: 0; font: inherit; text-align: left;
+  color: inherit; cursor: pointer; position: relative;
+  transition: border-color .15s, transform .12s, background .15s;
+}
+button.card.mate:hover { border-color: var(--accent); background: var(--accent-soft); }
+button.card.mate:active { transform: translateY(1px); }
+button.card.mate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.card.mate.mate--locked { cursor: not-allowed; }
+button.card.mate.mate--locked:hover { background: var(--card); }
+/* 卡片上那条小立绘（有 <id>.png 才出现）*/
+.mate__thumb {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 74px;
+  border-radius: 0 10px 10px 0; overflow: hidden; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 42%);
+  mask-image: linear-gradient(to right, transparent, #000 42%);
+}
+.mate__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; opacity: .85; }
+.mate__sum { font-size: 11px; color: var(--ink-faint); margin-top: 3px; }
+.mate__go { margin-left: auto; align-self: center; font-size: 11px; color: var(--ink-faint); padding-left: 4px; }
+button.card.mate:hover .mate__go { color: var(--accent); }
+
+/* ── 相册页 ── */
+.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.shot { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); cursor: pointer; }
+.shot img { display: block; width: 100%; height: 110px; object-fit: cover; }
+.shot__cap { padding: 5px 8px; font-size: 11px; color: var(--ink-dim); }
+.shot__cap b { display: block; color: var(--ink); font-size: 12px; font-weight: 600; }
+.shot__credit { display: block; margin-top: 2px; font-size: 10px; color: var(--ink-faint); opacity: .8; }
+.shot--empty { height: 110px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 11px; }
+.lightbox {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .82);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; z-index: 120; cursor: zoom-out; padding: 20px;
+  /* ★ 2026-10-26：z-index 由 30 提到 120 —— 旅伴档案弹层是 90，
+     30 会让"点击看大图"的灯箱**开在档案弹层底下**（看着像点了没反应）。 */
+}
+/* 关键：类的 display:flex 会盖过 UA 对 [hidden] 的 display:none —— 不加这条，
+   这层 82% 黑的遮罩从加载起就常驻，整页被压暗（2026-10-24 实测踩坑） */
+.lightbox[hidden] { display: none; }
+.lightbox img { max-width: 92%; max-height: 82%; border-radius: 8px; }
+.lightbox__cap { color: #e8eef4; font-size: 13px; text-align: center; }
+.empty { color: var(--ink-faint); padding: 30px; text-align: center; }
+
+/* 窄容器（设置弹窗）降级 */
+@media (max-width: 860px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .bento-mid { grid-template-columns: 1fr; }
+  .side { flex: 0 0 240px; }
+}
+/* ══ 2026-10-26 新增：同行足迹页 ══════════════════════════════════════════ */
+.trail { display: flex; flex-direction: column; gap: 10px; }
+.trail-grp { padding: 12px 14px; }
+.trail-grp__hd { display: flex; align-items: center; gap: 10px; }
+.trail-grp__av {
+  flex: 0 0 40px; width: 40px; height: 40px; border-radius: 10px;
+  object-fit: cover; object-position: top center; border: 1px solid var(--line);
+}
+.trail-grp__av--emoji {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; background: var(--accent-soft); border: 1px solid var(--line);
+}
+.trail-grp__name { display: flex; flex-direction: column; gap: 2px; }
+.trail-grp__name b { font-size: 13px; }
+.trail-grp__meta { font-size: 11px; color: var(--ink-faint); }
+.trail-cities { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.trail-city {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; padding: 3px 8px; border-radius: 999px;
+  background: var(--other-bg); border: 1px solid var(--line); color: var(--ink-dim);
+}
+.trail-city__n { color: var(--gold); font-weight: 600; }
+.trail-grp__note { margin-top: 8px; font-size: 11px; color: var(--ink-faint); }
+
+/* ══ 2026-10-26 新增：旅伴档案弹层 ═══════════════════════════════════════ */
+.mp { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; }
+.mp[hidden] { display: none; }
+.mp__mask { position: absolute; inset: 0; background: rgba(0, 0, 0, .62); backdrop-filter: blur(2px); }
+.mp__panel {
+  position: relative; width: min(920px, 94vw); max-height: 90vh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45);
+}
+.mp__x {
+  position: absolute; right: 10px; top: 10px; z-index: 2;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line); color: var(--ink-dim);
+  font-size: 14px; line-height: 1;
+}
+.mp__x:hover { color: var(--ink); border-color: var(--accent); }
+.mp__body { padding: 16px; }
+/* 左立绘固定小尺寸 + 右信息弹性。★ 用 flex 不用 grid：
+   2026-10-26 实测 grid 方案在面板内嵌窗口里被压成一栏，立绘占满整屏（主人反馈"点开后立绘太大"）。
+   flex-basis 定宽 + 图片定高，压得住。 */
+.mp__grid { display: flex; gap: 18px; align-items: flex-start; }
+
+/* 左：立绘（默认压小，点击看大图） */
+.mp__art {
+  position: relative; flex: 0 0 240px; width: 240px;
+  border-radius: 12px; overflow: hidden; cursor: zoom-in;
+  border: 1px solid var(--line); background: var(--card);
+}
+.mp__art:hover { border-color: var(--accent); }
+.mp__art img {
+  display: block; width: 240px; height: 300px;      /* 竖裁固定框，不随原图比例撑开 */
+  object-fit: cover; object-position: top center;
+}
+.mp__zoom {
+  position: absolute; right: 8px; top: 8px; z-index: 2;
+  font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, .55); color: #e8eef4;
+  border: 1px solid rgba(255, 255, 255, .18); pointer-events: none;
+}
+.mp__art--none {
+  display: flex; align-items: center; justify-content: center;
+  height: 300px; font-size: 56px; background: var(--accent-soft);
+}
+.mp__artcap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 18px 12px 8px; font-size: 12px; color: #e8eef4;
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), transparent);
+}
+
+/* 右：信息 */
+.mp__info { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.mp__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mp__name { margin: 0; font-size: 18px; color: var(--ink); }
+.mp__trait {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: var(--other-bg); border: 1px solid var(--gold); color: var(--gold);
+}
+.mp__sec { border-top: 1px dashed var(--line); padding-top: 10px; }
+.mp__sec-hd { font-size: 11px; color: var(--ink-faint); letter-spacing: .06em; margin-bottom: 6px; }
+.mp__text { margin: 0 0 8px; font-size: 12.5px; line-height: 1.65; color: var(--ink-dim); }
+.mp__stat { font-size: 12px; color: var(--ink); margin-bottom: 8px; }
+.mp__note { font-size: 12px; color: var(--ink-faint); }
+.mp__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.mp__chip {
+  font-size: 11px; padding: 3px 8px; border-radius: 999px;
+  background: var(--real-bg); border: 1px solid var(--line); color: var(--ink-dim);
+}
+
+/* 技能牌 */
+.mp__skill {
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+  margin-bottom: 8px; background: var(--card);
+}
+.mp__skill--on { border-color: var(--green); background: rgba(127, 208, 160, .10); }
+.mp__skill-hd { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.mp__skill-hd b { font-size: 13px; color: var(--ink); }
+.mp__skill-tag {
+  font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink-faint); white-space: nowrap;
+}
+.mp__skill-tag--on { border-color: var(--green); color: var(--green); }
+.mp__skill-fx { font-size: 12px; color: var(--ink-dim); margin-top: 5px; line-height: 1.55; }
+.mp__skill-why { font-size: 11.5px; color: var(--gold); margin-top: 4px; }
+
+@media (max-width: 860px) {
+  .mp__grid { flex-direction: column; }
+  .mp__art { flex: 0 0 auto; width: 100%; max-width: 240px; margin: 0 auto; }
+  .mp__art img { width: 100%; }
+  .mate__thumb { display: none; }   /* 窄屏卡片太挤，缩略图让位给文字 */
+}

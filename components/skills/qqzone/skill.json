@@ -1,0 +1,190 @@
+{
+  "id": "qqzone",
+  "name": "空间日记",
+  "version": "2.4.0",
+  "apiVersion": 1,
+  "description": "结合当天聊天记录与「世界与事件」插件写日记，用「长文排版图」排成图片发成日记说说。两个前置模块都是软依赖（没装也能用，分别为\"只给聊天记录\"与\"退成纯文字说说\"）。★ 本机已裁剪：发说说/刷动态/点赞/评论由 skills/qzone 负责，本技能只留日记线。",
+  "author": "QQ Agent",
+  "entry": "index.js",
+  "category": "utility",
+  "permissions": [],
+  "capabilities": [],
+  "requires": [],
+  "_note_requires": [
+    "v2.1 起前置全部软性（requires 留空，任何环境都注册工具），装了就增强、没装就降级：",
+    "「世界与事件」插件（plugins/life-system）—— 没装时 collect_diary 只给聊天记录，素材里注明世界观与账本跳过；",
+    "「长文排版图」技能（skills/text-image，能力名 text-image.render）—— 没装（或渲染失败）时 post_diary 自动把日记发成纯文字说说。",
+    "发布时建议在说明里注明：装上这两个模块日记体验完整（排图 + 世界观），不装也能用。"
+  ],
+  "enabledByDefault": false,
+  "_note_switch": [
+    "唯一开关是 config.skills['qqzone'].enabled，默认关。",
+    "enabledByDefault:false 意味着上游会在 available() 前先判定开关；开关关着时工具与提示词都会被移除。"
+  ],
+  "settings": {
+    "enabled": false,
+    "allowInGroup": true,
+    "diaryPerDay": 1,
+    "maxDiaryChars": 8000,
+    "showInChat": true,
+    "maxChats": 4,
+    "msgsPerChat": 16,
+    "maxCollectChars": 2400,
+    "worldbookChars": 2000,
+    "maxImageMB": 8,
+    "useDiaryCards": true,
+    "maxDiaryCards": 3,
+    "diaryTargetMin": 1500,
+    "diaryTargetMax": 2000,
+    "diaryAuto": true,
+    "diaryAtHour": 23,
+    "diaryAtMinute": 0,
+    "diaryModelMaxTokens": 8000
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用空间日记",
+      "description": "默认关。打开后模型才会拿到写日记的工具（收集日记素材 / 发日记说说）。"
+    },
+    "allowInGroup": {
+      "type": "boolean",
+      "label": "允许在群里使用",
+      "description": "关掉后所有工具都只在私聊可用（主动触发的发言不受此限）。"
+    },
+    "diaryPerDay": {
+      "type": "number",
+      "label": "每天最多写几篇日记",
+      "description": "默认 1。日记按天独立限频，与 postsPerDay 互不挤占。"
+    },
+    "maxDiaryChars": {
+      "type": "number",
+      "label": "日记正文最大字数",
+      "description": "默认 8000，硬上限 18000（再长排版图会超过 8 页上限被截断）。"
+    },
+    "showInChat": {
+      "type": "boolean",
+      "label": "日记图同时发到当前会话",
+      "description": "默认开：日记发到空间之后，把同样的排版图回显到触发日记的那个会话里。关掉就只发空间。"
+    },
+    "maxChats": {
+      "type": "number",
+      "label": "日记素材最多带几个会话",
+      "description": "最多取几个会话（默认 4）。今天话最多的几个会话优先。",
+      "default": 4
+    },
+    "msgsPerChat": {
+      "type": "number",
+      "label": "每个会话最多取几句",
+      "description": "每个会话最多取多少句进素材（默认 16）。★ 群聊是\"生活的重要组成部分\"（约三成），不必也不该整段搬进日记。",
+      "default": 16
+    },
+    "maxCollectChars": {
+      "type": "number",
+      "label": "聊天素材总字数上限",
+      "description": "聊天素材的字数上限（默认 2400）。★ 它要和旅行线（明信片＋回想，几百字）**同量级** —— 素材体积过大会直接压过口径里的 7:3，把日记淹成聊天流水账。",
+      "default": 2400
+    },
+    "worldbookChars": {
+      "type": "number",
+      "label": "世界观节选字数上限",
+      "description": "默认 2000。「世界与事件」的世界观文本超过这个长度时只取开头。"
+    },
+    "maxImageMB": {
+      "type": "number",
+      "label": "单张图体积上限（MB）",
+      "description": "默认 8，最大 32。超了不会上传，直接给出人话原因。日记图也吃这个上限。"
+    },
+    "useDiaryCards": {
+      "type": "boolean",
+      "label": "日记可配旅行明信片",
+      "description": "默认开。开着时收集素材会把当天寄回来的明信片列出来（带编号），模型可以挑最多 3 张附在日记说说后面。关掉就只发日记图。"
+    },
+    "maxDiaryCards": {
+      "type": "number",
+      "label": "每条日记最多配几张明信片",
+      "description": "默认 3，上限 6（加上日记正文图，不能超过空间单条说说的 9 张）。"
+    },
+    "diaryTargetMin": {
+      "type": "number",
+      "label": "日记目标字数（下限）",
+      "description": "默认 1500。提示词会要求日记写够这个字数——不设下限时她只写 500 字左右（实测）。改这个会同时改掉提示词里的数字。"
+    },
+    "diaryTargetMax": {
+      "type": "number",
+      "label": "日记目标字数（上限）",
+      "description": "默认 2000，会自动取不低于下限的值。这是**写作目标**，跟硬截断的「日记正文最大字数」（默认 8000）不是一回事：一篇 2000 字排成图只要 1 页（单页上限 2400 字）。"
+    },
+    "diaryAuto": {
+      "type": "boolean",
+      "label": "到点自动写日记",
+      "description": "默认开。到下面设定的时刻，如果今天还没写日记，就自动写一篇发出去（自己调模型写，不需要有人先跟它说话）。今天已经写过（不管是你叫它写的还是它自己写的）就不会重复。关掉 = 完全退回人工/模型主动的老行为。"
+    },
+    "diaryAtHour": {
+      "type": "number",
+      "label": "自动写日记的时刻（小时，0-23）",
+      "description": "默认 23（晚上十一点）。到点之后任意时刻检查，只要今天还没写就补一篇 —— 所以宿主当时没开着，晚点启动也会补。"
+    },
+    "diaryAtMinute": {
+      "type": "number",
+      "label": "自动写日记的时刻（分钟，0-59）",
+      "description": "默认 0。和上一项一起决定时刻。"
+    },
+    "diaryModelMaxTokens": {
+      "type": "number",
+      "label": "自动写日记的模型预算（tokens）",
+      "description": "默认 8000。写日记用的是主模型；如果主模型是思考模型，它会先花一部分在思考上 —— 预算太小会出现「返回空、日记没写出来」，那就把这个值调大。"
+    }
+  },
+  "prompt": {
+    "sections": [
+      {
+        "id": "qqzone-diary",
+        "title": "空间日记",
+        "priority": 38,
+        "content": "你要写日记时，**先 knowledge-base__kb_read 读《QQ空间操作手册》里「写日记」那一节**（三步流程、1500~2000 字长文、隐私铁律、一天一篇都在里面），再按 qqzone__collect_diary → 自己写 → qqzone__post_diary 的顺序发出。同样**不要提\"手册/资料\"**。"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "id": "collect_diary",
+      "name": "收集日记素材",
+      "description": "只读、不出网：把今天的聊天记录（热段+冷段，按条数与字数封顶）整理成素材摘要返回给模型；装了「世界与事件」插件时附上世界观节选与近况账本，没装则注明跳过",
+      "category": "utility",
+      "icon": "📓",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "id": "post_diary",
+      "name": "发日记说说",
+      "description": "日记正文 → 装了「长文排版图」时渲染成 PNG 直传 Qzone 图床发成带图说说（按天限频），日记图回显到当前会话；没装或渲染失败时自动发成纯文字说说",
+      "category": "utility",
+      "icon": "🌙",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "日记全文，第一人称"
+          },
+          "title": {
+            "type": "string",
+            "description": "图片标题，如「我的日记 · 10月4日」"
+          },
+          "caption": {
+            "type": "string",
+            "description": "说说配文一句话"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    }
+  ],
+  "_note_tools_is_metadata": "上游把 tools[] 当说明性元数据读，不会自动注册；真正的注册在 index.js 的 api.registerTool（新工具 id 会被加载器自动加 qqzone__ 前缀）。"
+}

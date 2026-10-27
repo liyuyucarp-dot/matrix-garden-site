@@ -1,0 +1,293 @@
+{
+  "id": "sleep-mood",
+  "name": "睡眠 · 元气 · 旅行心境集成系统 (v2.0)",
+  "version": "2.0.3",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "面向「矩阵庭院 · 旅行小鲸鱼」量身重构的元气与具身情境心境系统。① 元气轴（0~100）：日常与聊天绝不自然掉元气，仅由旅途战斗/奇遇、吃特产、庭院慢生活与睡眠驱动；② 具身情境心境（最多 2 个活跃 Tag）：由真实旅途事件与群内互动挂载带因果（why）的心境余韵，100% 兼容心愿（mind-wish）、自传（autobiography）与庭院地图面板；③ 单时钟融合：废除独立室内作息表，全面由 travel-whale 的在途/庭院状态接管。",
+  "author": "矩阵庭院 · v2.0 精简重构版（2.0.1 兼容补丁：configSchema / self-state / dashboard）",
+  "enabledByDefault": true,
+  "capabilities": [
+    "message.inbound-gate",
+    "mood.dashboard"
+  ],
+  "settingsUi": {
+    "id": "main",
+    "label": "睡眠·元气·旅行心境系统",
+    "file": "settings-ui.js"
+  },
+  "settings": {
+    "enabled": true,
+    "inject": true,
+    "tickSeconds": 60,
+    "selfState": true,
+    "travelSync": true,
+    "travelGroups": "",
+    "travelEventMood": true,
+    "ownerQq": "",
+    "addressNames": "",
+    "blockWhileSleeping": true,
+    "ignoreWhileSleeping": true,
+    "wakeWords": "起床 醒醒 别睡了",
+    "sleepCommand": "/睡觉",
+    "wakeCommand": "/起床",
+    "sleepKeywords": "睡觉 睡了 去睡 睡觉了 睡吧 我睡了 晚安 困了 睡觉吧 休息了",
+    "wakeKeywords": "起床 醒了 醒醒 起来 别睡 别睡了 起床了 我醒了 该起了",
+    "lockSleepToOwner": true,
+    "lockWakeToOwner": false,
+    "commandSleepHard": true,
+    "resumeCount": 20,
+    "confirm": true,
+    "naturalConfirm": true,
+    "sleepLineBrief": "你现在要发一句话给刚让你去睡的人。要求：一句、口语、25 字以内、带点困意，可以撒娇也可以嘴硬；不要解释任何机制或规则，只输出这一句。",
+    "sleepLineExamples": "好困…那我先去睡啦，别吵我\n知道了知道了，我这就去躺平\n唔…我先眯一会儿，有事再叫我",
+    "wakeLineBrief": "对方刚把你叫醒，你要应一声。要求：一句、口语、25 字以内，带点刚睡醒的迷糊或没睡够的小情绪，不要报数字，只输出这一句。",
+    "wakeLineExamples": "唔…醒了醒了\n几点了…叫我干嘛\n（揉眼睛）怎么了怎么了",
+    "wakeChancePercent": 55,
+    "wakeFailReplyEnabled": true,
+    "playAlongEnabled": true,
+    "playAlongMaxReplies": 3,
+    "sleepRecoverPerHour": 22,
+    "vitalityLowThreshold": 45,
+    "vitalitySleepyThreshold": 20,
+    "phoneGate": true,
+    "phoneIgnoreChance": 0.55,
+    "phoneSelfDecide": true,
+    "toneLinkEnabled": true,
+    "toneLinkWarmMin": 30,
+    "toneLinkFatigueDrop": 60,
+    "toneLinkRageMin": 15
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "【基础】总开关",
+      "description": "关掉后不再观察入站、不推进心跳、不注入提示词（磁盘上的数值保留）。"
+    },
+    "inject": {
+      "type": "boolean",
+      "label": "【基础】注入状态到提示词",
+      "description": "把「此刻心境」「身体元气」「在旅途/在庭院」这几块写进提示词末尾。关掉只停注入，数值照常推进。"
+    },
+    "tickSeconds": {
+      "type": "number",
+      "label": "【基础】心跳间隔（秒）",
+      "description": "后台推进睡眠元气结算、旅途事件、20 分钟一挡的旅途瞬间的间隔，默认 60。",
+      "min": 15,
+      "max": 600
+    },
+    "selfState": {
+      "type": "boolean",
+      "label": "【基础】自述状态追踪",
+      "description": "她自己说「我去睡了 / 我去洗澡了」时记下来，并据此进入自然睡眠或结算泡澡恢复。"
+    },
+    "ownerQq": {
+      "type": "string",
+      "label": "【基础】主人 QQ 号",
+      "description": "留空则尝试从 owner-identity 能力自动识别（推荐）。用于起床口令鉴权与「谁在闹」——填错会让别人也能叫醒她。"
+    },
+    "addressNames": {
+      "type": "string",
+      "multiline": true,
+      "label": "【基础】她被叫的名字",
+      "description": "判断「这句话是不是冲她说的」时用的称呼表，空格或换行分隔。"
+    },
+    "sleepCommand": {
+      "type": "string",
+      "label": "【睡眠·吵醒】入睡指令",
+      "description": "群里发这个指令（需 @机器人）立即进入命令睡眠：消息照常存档但不送模型（零 token）。"
+    },
+    "wakeCommand": {
+      "type": "string",
+      "label": "【睡眠·吵醒】起床指令",
+      "description": "命令睡眠期间发这个指令即恢复调度，并把积压的未读各补处理一次。"
+    },
+    "sleepKeywords": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】入睡关键词",
+      "description": "命中任一词即视为让她去睡（空格分隔）。"
+    },
+    "wakeKeywords": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】叫醒关键词",
+      "description": "睡着时命中任一词才可能被叫醒（空格分隔）。"
+    },
+    "wakeWords": {
+      "type": "string",
+      "label": "【睡眠·吵醒】吵醒触发词",
+      "description": "睡得正香时，带着这些词喊她更容易触发「被吵醒」。"
+    },
+    "lockSleepToOwner": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】入睡指令仅主人可用",
+      "description": "开启后只有主人能让她去睡，群里别人发无效。"
+    },
+    "lockWakeToOwner": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】起床口令仅主人可用",
+      "description": "开启后只有主人能叫醒她，别人喊不理。"
+    },
+    "commandSleepHard": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】命令睡眠硬暂停调度",
+      "description": "命令睡眠时真的暂停编排器调度（不是只在入口拦），醒来再补处理。"
+    },
+    "blockWhileSleeping": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】睡着时拦截入站",
+      "description": "睡眠期间普通消息不送模型（照常存档）。关掉她会边睡边回消息。"
+    },
+    "ignoreWhileSleeping": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】睡眠时底层忽略（省 token）",
+      "description": "睡着时普通消息在入口就拦，零 token，醒来补看。"
+    },
+    "resumeCount": {
+      "type": "number",
+      "label": "【睡眠·吵醒】醒来补看会话数",
+      "description": "起床后最多补处理多少个有未读的会话，默认 20。",
+      "min": 0,
+      "max": 100
+    },
+    "confirm": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】入睡前先应一声",
+      "description": "进入睡眠前回一句确认，让群里知道她不是失联。"
+    },
+    "naturalConfirm": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】确认句由模型现编",
+      "description": "关掉则用固定模板句。开启时会真实调用一次模型（有 token 成本）。"
+    },
+    "sleepLineBrief": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】入睡确认句的要求",
+      "description": "给模型的一句话要求（口吻、长度、不许解释机制）。留空则不生成，直接走模板。"
+    },
+    "sleepLineExamples": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】入睡确认句示例",
+      "description": "每行一句，只用来定语气，别照抄。"
+    },
+    "wakeLineBrief": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】起床应答的要求",
+      "description": "给模型的一句话要求（刚睡醒的迷糊感、不报数字）。留空则走模板。"
+    },
+    "wakeLineExamples": {
+      "type": "string",
+      "multiline": true,
+      "label": "【睡眠·吵醒】起床应答示例",
+      "description": "每行一句，只用来定语气。"
+    },
+    "wakeChancePercent": {
+      "type": "number",
+      "label": "【睡眠·吵醒】可被吵醒的概率（%）",
+      "description": "默认 55；同一窗口内被吵醒越多，下一次越难醒。",
+      "min": 0,
+      "max": 100
+    },
+    "wakeFailReplyEnabled": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】没叫醒也哼一声",
+      "description": "睡着没被叫起来时，也回一句翻身/嘟囔之类的短话（不真的醒）。"
+    },
+    "playAlongEnabled": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】心情好时陪闹",
+      "description": "被吵醒但不生气时，可以陪你聊几句再收尾回睡。"
+    },
+    "playAlongMaxReplies": {
+      "type": "number",
+      "label": "【睡眠·吵醒】陪闹可回复条数",
+      "description": "默认 3；设 0 = 不陪闹直接收尾。",
+      "min": 0,
+      "max": 20
+    },
+    "phoneGate": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】刷手机分心闸",
+      "description": "她在刷 B 站视频时会分心，被叫到时可能没抬头（不回复）。"
+    },
+    "phoneIgnoreChance": {
+      "type": "number",
+      "label": "【睡眠·吵醒】分心没抬头的概率",
+      "description": "0~1 之间的小数，默认 0.55。",
+      "min": 0,
+      "max": 1
+    },
+    "phoneSelfDecide": {
+      "type": "boolean",
+      "label": "【睡眠·吵醒】分心与否由她自己判断",
+      "description": "开启后由模型决定这次是否抬头（更自然，多一次判定）；关掉则按上面的概率掷。"
+    },
+    "sleepRecoverPerHour": {
+      "type": "number",
+      "label": "【身体·元气】睡眠每小时恢复",
+      "description": "睡着期间每小时回复的元气点数，默认 22。清醒时元气不自然下降。",
+      "min": 0,
+      "max": 100
+    },
+    "vitalityLowThreshold": {
+      "type": "number",
+      "label": "【身体·元气】微倦提示线",
+      "description": "元气低于此值时，提示词里给她「懒洋洋、慢半拍」的语气。默认 45。",
+      "min": 0,
+      "max": 100
+    },
+    "vitalitySleepyThreshold": {
+      "type": "number",
+      "label": "【身体·元气】困倦提示线",
+      "description": "元气低于此值时，语气更困、更短。默认 20。",
+      "min": 0,
+      "max": 100
+    },
+    "travelSync": {
+      "type": "boolean",
+      "label": "【旅行同步】读取旅行鲸鱼状态",
+      "description": "从 travel-whale 的存档只读同步「在途旅程 / 在庭院 / 刚吃完特产」，并据此注入自身状态。"
+    },
+    "travelGroups": {
+      "type": "string",
+      "multiline": true,
+      "label": "【旅行同步】同步哪些群",
+      "description": "群号，逗号或换行分隔。留空则自动扫描 travel-whale 已有的全部群存档。"
+    },
+    "travelEventMood": {
+      "type": "boolean",
+      "label": "【旅行同步】旅途事件影响元气与心境",
+      "description": "战斗/奇遇/明信片/吃特产/庭院小事会挂上带因果的心境余韵，并小幅增减元气。"
+    },
+    "toneLinkEnabled": {
+      "type": "boolean",
+      "label": "【语气联动】元气与心境影响说话语气",
+      "description": "元气低或正带着小脾气时，语气随之变化（只是语气，不改事实）。"
+    },
+    "toneLinkWarmMin": {
+      "type": "number",
+      "label": "【语气联动】需要被哄的元气下限",
+      "description": "元气低于此值时更容易显出需要顺毛的一面。默认 30。",
+      "min": 0,
+      "max": 100
+    },
+    "toneLinkFatigueDrop": {
+      "type": "number",
+      "label": "【语气联动】疲劳触发降调的阈值",
+      "description": "疲劳（= 100 - 元气）高于此值时，语气明显放缓。默认 60。",
+      "min": 0,
+      "max": 100
+    },
+    "toneLinkRageMin": {
+      "type": "number",
+      "label": "【语气联动】带刺的最小怒气压",
+      "description": "生气类心境的强度高于此值时才允许说话带刺。默认 15。",
+      "min": 0,
+      "max": 100
+    }
+  }
+}

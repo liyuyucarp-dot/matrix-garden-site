@@ -1,0 +1,39 @@
+{
+  "_note": "探针夹具：**全为虚构数据**（无真实昵称/QQ号/群号）。用于跑 buildSnapshot 的快照探针，防止「快照生成即崩」这类只在运行期才暴露的缺陷（v2.2.7 的 portraitExists 就是这种）。",
+  "version": 3,
+  "wallet": { "plankton": 12345 },
+  "companionOwned": ["fox", "gpt", "claude", "gemini", "grok", "kimi", "qwen"],
+  "companions": [{ "id": "fox" }, { "id": "gpt" }],
+  "trip": {},
+  "homeAct": { "kind": "tea", "at": 1730000000000 },
+  "whale": {
+    "equipUnlocked": ["asia", "europe", "arknights"],
+    "equipBuyable": ["genshin"],
+    "equipped": "arknights",
+    "companionWorlds": {
+      "fox": ["arknights", "genshin"],
+      "gpt": ["arknights"],
+      "claude": ["europe"]
+    },
+    "companionSkills": { "gatecrash": { "at": 1730000000000 } },
+    "compTrips": { "fox": 3, "gpt": 1 },
+    "mateCities": {
+      "fox": {
+        "arknights|龙门": { "regionId": "arknights", "city": "龙门", "country": "", "n": 2, "firstAt": 1729000000000, "lastAt": 1730000000000 },
+        "genshin|璃月": { "regionId": "genshin", "city": "璃月", "country": "", "n": 1, "firstAt": 1729500000000, "lastAt": 1729500000000 }
+      }
+    }
+  },
+  "visitedCities": {
+    "asia|东京": { "region": "asia", "city": "东京", "country": "日本", "count": 2, "lastAt": 1729900000000 },
+    "europe|巴黎": { "region": "europe", "city": "巴黎", "country": "法国", "count": 1, "lastAt": 1729800000000 }
+  },
+  "garden": { "levels": { "pond": 2, "tea": 1 }, "array": [] },
+  "pond": { "fish": 3 },
+  "wardrobe": { "owned": ["maid", "yukata"], "worn": "maid" },
+  "souvenirs": { "月光茶": { "count": 2, "stock": 2 } },
+  "album": [],
+  "titles": { "mate-first": { "at": 1729000000000 } },
+  "stats": { "trips": 4, "cards": 6, "maxSouvenirsPerTrip": 2 },
+  "sideTrips": []
+}

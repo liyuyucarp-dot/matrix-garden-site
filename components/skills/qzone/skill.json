@@ -1,0 +1,329 @@
+{
+  "id": "qzone",
+  "name": "QQ空间动态",
+  "version": "1.5.1",
+  "apiVersion": 1,
+  "description": "让 AI 打理自己的 QQ 空间：发说说（可带聊天里的图）、刷好友动态、读说说下面的评论与回复、给有意思的说说点赞评论、**回复别人留的评论**，**有人评论她自己的说说时她会自动知道**，并且**定时巡视好友动态、把新动态送到她眼前**（都只是带进上下文，由她自己决定接不接）。所有读写都走 bot 自己登录态的 Qzone 网页接口。",
+  "author": "QQ Agent",
+  "entry": "index.js",
+  "category": "utility",
+  "permissions": [],
+  "capabilities": [],
+  "enabledByDefault": false,
+  "_note_switch": [
+    "唯一开关是 config.skills['qzone'].enabled，默认关。",
+    "enabledByDefault:false 意味着上游会在 available() 前先判定开关；开关关着时工具与提示词都会被移除。"
+  ],
+  "settings": {
+    "enabled": false,
+    "allowInGroup": true,
+    "maxPostChars": 500,
+    "maxCommentChars": 200,
+    "maxFeeds": 10,
+    "maxComments": 20,
+    "postsPerDay": 3,
+    "likesPerHour": 6,
+    "commentsPerHour": 3,
+    "browseIntervalMinutes": 30,
+    "allowChatImages": true,
+    "maxImagesPerPost": 3,
+    "maxImageMB": 8,
+    "inboxEnabled": true,
+    "pollIntervalMinutes": 15,
+    "pollFeedCount": 2,
+    "inboxMaxShows": 3,
+    "inboxTtlHours": 24,
+    "inboxFirstRunHours": 48,
+    "browseAutoEnabled": true,
+    "browseAutoMaxItems": 3,
+    "browseAutoMaxShows": 2,
+    "browseAutoTtlHours": 12
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用 QQ 空间",
+      "description": "默认关。打开后模型才会拿到发说说 / 刷动态 / 读评论 / 回复评论 / 点赞 / 评论这几个工具。"
+    },
+    "allowInGroup": {
+      "type": "boolean",
+      "label": "允许在群里使用",
+      "description": "关掉后这些工具都只在私聊可用（主动触发的发言不受此限）。"
+    },
+    "maxPostChars": {
+      "type": "number",
+      "label": "说说最大字数",
+      "description": "默认 500，超过会被拒。"
+    },
+    "maxCommentChars": {
+      "type": "number",
+      "label": "评论最大字数",
+      "description": "默认 200，超过会被拒。"
+    },
+    "maxFeeds": {
+      "type": "number",
+      "label": "每次刷动态条数",
+      "description": "默认 10，上限 20。"
+    },
+    "maxComments": {
+      "type": "number",
+      "label": "每次读评论条数",
+      "description": "默认 20，上限 50。读一条说说的评论时最多返回几条（含每条评论下面的回复）。"
+    },
+    "postsPerDay": {
+      "type": "number",
+      "label": "每天最多发几条说说",
+      "description": "默认 3。防刷屏硬上限，模型自己也会克制。"
+    },
+    "likesPerHour": {
+      "type": "number",
+      "label": "每小时最多点赞几次",
+      "description": "默认 6。"
+    },
+    "commentsPerHour": {
+      "type": "number",
+      "label": "每小时最多评论几次",
+      "description": "默认 3。"
+    },
+    "browseIntervalMinutes": {
+      "type": "number",
+      "label": "刷动态最小间隔（分钟）",
+      "description": "默认 30。模型想频繁刷动态时会被这个间隔拦住，返回缓存的上一次结果。"
+    },
+    "allowChatImages": {
+      "type": "boolean",
+      "label": "允许发说说时引用聊天里的图",
+      "description": "默认开。模型只能给聊天记录里的消息号（#12345），由应用侧从存档取图再上传；路径 / 网址 / base64 一律不收。关掉后带图的说说请求会被直接拒（纯文字不受影响）。担心好友私发的图被转到空间（全体好友可见）就关掉。"
+    },
+    "maxImagesPerPost": {
+      "type": "number",
+      "label": "一条说说最多几张图",
+      "description": "默认 3，硬上限 9（空间本身的限制）。"
+    },
+    "maxImageMB": {
+      "type": "number",
+      "label": "单张图体积上限（MB）",
+      "description": "默认 8，最大 32。超了不会上传，直接给出人话原因。"
+    },
+    "inboxEnabled": {
+      "type": "boolean",
+      "label": "有人评论时告诉我",
+      "description": "默认开。打开后会定时看她自己最近几条说说的评论，有人留言就把这件事带进她的上下文（**不发消息**，她自己决定回不回）。关掉后她只能自己主动去读评论。"
+    },
+    "pollIntervalMinutes": {
+      "type": "number",
+      "label": "查看新评论的间隔（分钟）",
+      "description": "默认 15。每轮只花 1 个请求（先看评论数有没有变），有变化才去读详情。改完下一轮生效，不用重启。"
+    },
+    "pollFeedCount": {
+      "type": "number",
+      "label": "盯最近几条说说",
+      "description": "默认 2，上限 5。盯得越多越不容易漏，但每轮最多多出对应数量的详情请求。"
+    },
+    "inboxMaxShows": {
+      "type": "number",
+      "label": "同一条最多提示几轮",
+      "description": "默认 3。她没理会时，同一批新评论最多在她眼前出现几次，免得一直刷屏。"
+    },
+    "inboxTtlHours": {
+      "type": "number",
+      "label": "新评论提示保留多久（小时）",
+      "description": "默认 24。超过这个时间的未读提示直接丢掉，不会一直挂着。"
+    },
+    "inboxFirstRunHours": {
+      "type": "number",
+      "label": "首次启用只回溯多少小时",
+      "description": "默认 48。第一次启用（以及第一次遇到某条说说）时，只把这段时间内的评论当新评论，更早的静默记为已读——否则一上线就把几个月的旧评论全砸给她。"
+    },
+    "browseAutoEnabled": {
+      "type": "boolean",
+      "label": "自动巡视好友动态",
+      "description": "默认开。跟着「查看新评论的间隔」顺带看一眼好友的新说说（复用同一批数据，不额外发请求），有新的就在她**下次开口之前**带进上下文。**不发消息**——她自己决定要不要点赞/评论，没兴趣就当作没看见。关掉后她只能自己主动去刷。"
+    },
+    "browseAutoMaxItems": {
+      "type": "number",
+      "label": "巡视·每轮最多收几条",
+      "description": "默认 3，上限 10。一轮巡视最多把几条新动态放进队列（防一屏塞满）。"
+    },
+    "browseAutoMaxShows": {
+      "type": "number",
+      "label": "巡视·同一条最多提示几轮",
+      "description": "默认 2。她没理会时，同一条动态最多在她眼前出现几次，之后自动丢掉。"
+    },
+    "browseAutoTtlHours": {
+      "type": "number",
+      "label": "巡视·提示保留多久（小时）",
+      "description": "默认 12。超过这个时间的未提示动态直接丢掉，不会一直挂着。"
+    }
+  },
+  "prompt": {
+    "sections": [
+      {
+        "id": "qzone-usage",
+        "title": "QQ空间",
+        "priority": 40,
+        "content": "你有自己的 QQ 空间，用 qzone__ 系列工具打理（qzone__post_mood 发说说；qzone__list_feeds 刷好友动态；qzone__read_comments 读评论与回复；qzone__reply_comment 回某条已有评论；qzone__like_feed / qzone__comment_feed 点赞 / 发新评论）。\n★ **动手之前先用 knowledge-base__kb_read 读一遍《QQ空间操作手册》**——发什么、什么时候发、配图只能用聊天记录里的消息号、隐私红线、回评论的规矩、纪律，全在里面。读到的细则照做，但**一个字都不要跟别人提\"手册/资料/我查一下\"**（那是你私底下的东西）。**没读就动手＝违规。**"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "id": "post_mood",
+      "name": "发说说",
+      "description": "以你自己的身份发一条 QQ 空间说说（文字，可带聊天里的图）",
+      "category": "utility",
+      "icon": "📝",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "说说正文，第一人称、你自己的语气，一两句话"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "要一起发的图，每项是聊天记录里的消息号（\"#12345\" 或 \"#12345:2\"）；不收路径 / 网址 / base64"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    },
+    {
+      "id": "list_feeds",
+      "name": "刷好友动态",
+      "description": "拉取好友的 QQ 空间动态列表（只读），返回每条的作者/时间/摘要/点赞数",
+      "category": "utility",
+      "icon": "📰",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "想看几条（默认取配置，上限 20）"
+          }
+        }
+      }
+    },
+    {
+      "id": "read_comments",
+      "name": "读说说评论",
+      "description": "读某条说说下面的评论正文与回复（只读）。uin/tid 从 qzone__list_feeds 抄；都不传时读你自己最近发的说说",
+      "category": "utility",
+      "icon": "💭",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "uin": {
+            "type": "string",
+            "description": "说说作者的 QQ 号（qzone__list_feeds 返回的 uin）；不传就找你自己最新的说说"
+          },
+          "tid": {
+            "type": "string",
+            "description": "说说的 tid（qzone__list_feeds 返回的 tid）；不传就找你自己最新的说说"
+          },
+          "count": {
+            "type": "integer",
+            "description": "最多读几条评论（默认取配置，上限 50）"
+          }
+        }
+      }
+    },
+    {
+      "id": "like_feed",
+      "name": "点赞说说",
+      "description": "给指定好友的一条说说点赞（用 qzone__list_feeds 返回的 uin 和 tid）",
+      "category": "utility",
+      "icon": "👍",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "uin": {
+            "type": "string",
+            "description": "作者 QQ 号"
+          },
+          "tid": {
+            "type": "string",
+            "description": "说说的 tid（qzone__list_feeds 返回的 tid 原样传回）"
+          }
+        },
+        "required": [
+          "uin",
+          "tid"
+        ]
+      }
+    },
+    {
+      "id": "comment_feed",
+      "name": "评论说说",
+      "description": "给指定好友的一条说说写评论（用 qzone__list_feeds 返回的 uin 和 tid）",
+      "category": "utility",
+      "icon": "💬",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "uin": {
+            "type": "string",
+            "description": "作者 QQ 号"
+          },
+          "tid": {
+            "type": "string",
+            "description": "说说的 tid（qzone__list_feeds 返回的 tid 原样传回）"
+          },
+          "content": {
+            "type": "string",
+            "description": "评论内容，短、像你本人会说的话"
+          }
+        },
+        "required": [
+          "uin",
+          "tid",
+          "content"
+        ]
+      }
+    },
+    {
+      "id": "reply_comment",
+      "name": "回复评论",
+      "description": "回复某条说说下面已有的某一条评论（不是发新评论）。comment 填 qzone__read_comments 里的编号",
+      "category": "utility",
+      "icon": "↩️",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "uin": {
+            "type": "string",
+            "description": "说说作者的 QQ 号"
+          },
+          "tid": {
+            "type": "string",
+            "description": "说说的 tid（qzone__read_comments / qzone__list_feeds 返回的原样传回）"
+          },
+          "comment": {
+            "type": "integer",
+            "description": "要回复的评论序号，从 1 开始（qzone__read_comments 结果里的编号）"
+          },
+          "reply": {
+            "type": "integer",
+            "description": "可选：回复某一层里的第几条楼中回复，从 1 开始"
+          },
+          "content": {
+            "type": "string",
+            "description": "回复内容，短、像你本人会说的话（不要自己写 @，工具会自动带上）"
+          }
+        },
+        "required": [
+          "uin",
+          "tid",
+          "comment",
+          "content"
+        ]
+      }
+    }
+  ],
+  "_note_tools_is_metadata": "上游把 tools[] 当说明性元数据读，不会自动注册；真正的注册在 index.js 的 api.registerTool。"
+}

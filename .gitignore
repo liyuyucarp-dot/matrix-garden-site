@@ -1,0 +1,11 @@
+# .gitignore —— 构建产物与本地杂物不入库
+dist/
+node_modules/
+_backup_*/
+_core_patch_backup_*/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

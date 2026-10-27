@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>庭院与旅程</title>
+<!--
+  庭院与旅程面板（skills/courtyard-map/panel/map.html）
+  由 skill.json 的 configSchema action 声明，宿主设置弹窗渲染按钮，
+  点开即本页（只读挂在 /plugin-panel/courtyard-map/ 下）。
+
+  两条宿主 CSP 约束（与贴纸面板同一契约，见 src/skills/panel.js）：
+    · script-src 'self' —— 内联 <script> / onclick= 一律不执行，全走 map.js + addEventListener；
+    · default-src 'self' —— 资源只用同源相对路径；数据从 ../@data/storage.json 拿。
+  主题：map.js 在 <head> 同步执行时定 data-theme（与 /ui 同源 localStorage 共用）。
+-->
+<link rel="stylesheet" href="map.css?v=20261026c">
+<script src="map.js?v=20261026c"></script>
+</head>
+<body>
+  <header class="hd">
+    <h1 class="hd__title">庭院与旅程</h1>
+    <nav class="tabs" id="tabs">
+      <button class="tab tab--on" type="button" data-tab="map">地图</button>
+      <button class="tab" type="button" data-tab="yard">庭院</button>
+      <button class="tab" type="button" data-tab="mates">旅伴</button>
+      <button class="tab" type="button" data-tab="trail">足迹</button>
+      <button class="tab" type="button" data-tab="album">相册</button>
+    </nav>
+    <div class="hd__spacer"></div>
+    <div class="hd__meta" id="meta">加载中…</div>
+    <button class="btn" type="button" id="reload" title="立即刷新">↻</button>
+  </header>
+
+  <main>
+    <!-- 地图页 -->
+    <section class="page page--on" id="page-map">
+      <div class="map-wrap">
+        <div class="map-fit" id="mapFit">
+          <div class="map-board map-canvas" id="mapCanvas">
+            <svg class="world-dots" id="worldDots" viewBox="0 0 1000 470" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 640" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="mirror-divider"><span class="mirror-gate">◈ 水 镜 之 门 ◈</span></div>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="card" id="whaleCard"></div>
+        <div class="card" id="homeNowCard"></div>
+        <div class="legend card">
+          <div>📍 金点 = 她现在所在</div>
+          <div>● 到访过（越亮次数越多）</div>
+          <div>◆ 真实区域　◇ 异世界</div>
+          <div>✈ 已解锁待启程　🔒 未解锁</div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- 庭院页（Bento：KPI 横卡行 / 设施+纪念品 3:7 / 身心与好感 / 近况通栏） -->
+    <section class="page" id="page-yard">
+      <div class="kpi-row" id="kpiRow"></div>
+      <div class="bento-mid" id="bentoMid"></div>
+      <div class="vitals-row" id="vitalsRow"></div>
+      <div class="card feed-card" id="yardFeedCard"></div>
+    </section>
+
+    <!-- 旅伴页 -->
+    <section class="page" id="page-mates">
+      <div class="mates" id="mates"></div>
+    </section>
+
+    <!-- 同行足迹页（2026-10-26）：和哪位旅伴、一起去过哪个世界的哪座城、几趟 -->
+    <section class="page" id="page-trail">
+      <div class="trail" id="trail"></div>
+    </section>
+
+    <!-- 相册页 -->
+    <section class="page" id="page-album">
+      <div class="album" id="album"></div>
+    </section>
+  </main>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <img id="lightboxImg" alt="">
+    <div class="lightbox__cap" id="lightboxCap"></div>
+  </div>
+  <!-- 旅伴档案（点旅伴卡片打开；立绘 + 能力 + 技能 + 足迹 + 来历） -->
+  <div class="mp" id="mateProfile" hidden>
+    <div class="mp__mask" data-mp-close="1"></div>
+    <div class="mp__panel" role="dialog" aria-modal="true" aria-labelledby="mpName">
+      <button class="mp__x" type="button" id="mateProfileClose" aria-label="关闭">✕</button>
+      <div class="mp__body" id="mateProfileBody"></div>
+    </div>
+  </div>
+</body>
+</html>

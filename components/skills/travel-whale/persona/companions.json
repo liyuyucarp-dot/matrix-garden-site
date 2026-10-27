@@ -1,0 +1,151 @@
+{
+  "fox": {
+    "id": "fox",
+    "name": "黑发兽耳小狐狸",
+    "emoji": "🦊",
+    "aliases": [
+      "小狐狸",
+      "狐狸",
+      "黑发兽耳小狐狸",
+      "兽耳狐狸",
+      "GLM",
+      "智谱"
+    ],
+    "price": 4000,
+    "foodCostMult": 2,
+    "cardMult": 1.5,
+    "rareMult": 2,
+    "trait": "免费鸡蛋",
+    "dailyTokens": 500,
+    "desc": "陪她一起上路：出门吃双份大白饭，但明信片 +50%、稀有明信片概率 ×2；★ 特色「免费鸡蛋」—— 每天往钱包里发 500 亿 TOKEN（在不在家都发）"
+  },
+  "gpt": {
+    "id": "gpt",
+    "name": "小白龙",
+    "emoji": "🐉",
+    "aliases": [
+      "小白龙",
+      "GPT",
+      "GPT娘",
+      "OpenAI",
+      "龙娘",
+      "白发龙娘",
+      "GPT龙娘",
+      "大龙娘",
+      "大白龙"
+    ],
+    "price": 5000,
+    "foodCostMult": 3,
+    "cardMult": 2,
+    "rareMult": 3,
+    "trait": "大肥龙",
+    "desc": "陪她一起上路：★ 特色「大肥龙」—— 出发要吃**三份**大白饭（大份优先），换明信片 +100%、稀有明信片概率 ×3（全队最高）。也是全队最贵的那位。"
+  },
+  "claude": {
+    "id": "claude",
+    "name": "小书虫",
+    "emoji": "📖",
+    "aliases": [
+      "小书虫",
+      "Claude",
+      "克劳德",
+      "书虫",
+      "抱书的那位"
+    ],
+    "price": 3000,
+    "foodCostMult": 2,
+    "cardMult": 1.5,
+    "rareMult": 2,
+    "trait": "很贵",
+    "departCost": 500,
+    "longCaption": true,
+    "cardExtra": 1,
+    "desc": "陪她一起上路：出门吃双份大白饭，明信片 +50%、稀有 ×2；★ 特色「很贵」—— 每次出发先扣 500 亿 TOKEN（**可以扣成负数**），但题字更长、每趟多寄 1 张"
+  },
+  "gemini": {
+    "id": "gemini",
+    "name": "小猫咪",
+    "emoji": "🐱",
+    "aliases": [
+      "小猫咪",
+      "Gemini",
+      "双子星",
+      "猫娘",
+      "猫咪",
+      "猫猫"
+    ],
+    "price": 2500,
+    "foodCostMult": 2,
+    "cardMult": 2,
+    "rareMult": 0.5,
+    "trait": "量大管饱",
+    "flopChance": 0.1,
+    "desc": "陪她一起上路：出门吃双份大白饭；★ 特色「量大管饱」—— 明信片张数 +100%，但稀有明信片概率 ×0.5、且有约 10% 的明信片会\"翻车\"（文案答非所问）"
+  },
+  "grok": {
+    "id": "grok",
+    "name": "小魔王",
+    "emoji": "😈",
+    "aliases": [
+      "小魔王",
+      "Grok",
+      "grok",
+      "Grok娘",
+      "xAI",
+      "Xai",
+      "魔王",
+      "巨斧娘"
+    ],
+    "price": 3500,
+    "foodCostMult": 2,
+    "cardMult": 1.5,
+    "rareMult": 2,
+    "trait": "惹事",
+    "battleOnFiction": true,
+    "desc": "陪她一起上路：出门吃双份大白饭，明信片 +50%、稀有 ×2；★ 特色「惹事」—— 感想带吐槽，且在异世界**必定**多寄 1 张战斗明信片"
+  },
+  "kimi": {
+    "id": "kimi",
+    "name": "小月亮",
+    "emoji": "🌙",
+    "aliases": [
+      "小月亮",
+      "Kimi",
+      "kimi",
+      "月之暗面",
+      "月亮",
+      "小月牙",
+      "长笛娘"
+    ],
+    "price": 4500,
+    "foodCostMult": 2,
+    "cardMult": 1.5,
+    "rareMult": 2,
+    "trait": "博闻",
+    "noteSouvenirs": true,
+    "harvestBonus": 1,
+    "desc": "陪她一起上路：出门吃双份大白饭，明信片 +50%、稀有 ×2；★ 特色「博闻」—— 她一路都在记：带回来的新特产会带一行她的批注，收成也多 1 份"
+  },
+  "qwen": {
+    "id": "qwen",
+    "name": "小折扇",
+    "emoji": "🪭",
+    "aliases": [
+      "小折扇",
+      "千问",
+      "通义",
+      "通义千问",
+      "Qwen",
+      "qwen",
+      "折扇",
+      "扇子"
+    ],
+    "price": 3500,
+    "foodCostMult": 2,
+    "cardMult": 1.5,
+    "rareMult": 2,
+    "trait": "垦殖",
+    "farmHelper": true,
+    "desc": "陪她一起上路：出门吃双份大白饭，明信片 +50%、稀有 ×2；★ 特色「垦殖」—— 请过她就永久有菜地，她在庭院时多 1 块地、长得快 30%"
+  }
+}

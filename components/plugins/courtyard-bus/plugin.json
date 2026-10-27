@@ -1,0 +1,23 @@
+{
+  "id": "courtyard-bus",
+  "name": "庭院总线",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "矩阵庭院组件间的进程内事件总线（试点）：publish/subscribe 实时事件，替代跨目录 JSON 轮询的延迟。纯内存、零依赖、零 fs——总线挂了各组件自动退回轮询。",
+  "author": "local",
+  "enabledByDefault": true,
+  "capabilities": [],
+  "requires": [],
+  "settings": {
+    "enabled": true
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用庭院总线",
+      "description": "进程内事件 Pub/Sub 试点（当前只通 mood:state.shifted → mind-wish 即时吸收）。关掉后各组件退回轮询，功能不受损。"
+    }
+  },
+  "prompt": null
+}

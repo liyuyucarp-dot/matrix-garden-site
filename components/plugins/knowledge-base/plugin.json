@@ -1,0 +1,176 @@
+{
+  "id": "knowledge-base",
+  "name": "本地知识库",
+  "version": "1.1.1",
+  "apiVersion": 1,
+  "category": "knowledge",
+  "description": "把一个 txt / md 文件丢进 data/knowledge-base/，机器人就自动学会了：它回答前先翻本地知识库，翻不到才上网搜，搜到的东西自动存进 learned/ 子目录，下次直接命中、不用再搜。v1.1 起每条记录带元数据（topic 主题键 / weight 重要度 1~5）：同主题的多次记录会合并进同一篇而不是一题一文件，重要度参与检索排序，已写入的内容可以直接改写。纯本地检索，不花 token 也不联网；全部是明文文件，随时可以打开看、改、删。提供 knowledge-base__kb_search / knowledge-base__kb_read / knowledge-base__kb_remember / knowledge-base__kb_update / knowledge-base__kb_status 五个工具。",
+  "author": "本机定制",
+  "entry": "index.js",
+  "permissions": [],
+  "enabledByDefault": true,
+  "capabilities": [
+    "knowledge.search",
+    "knowledge.write",
+    "knowledge.update"
+  ],
+  "requires": [],
+  "settings": {
+    "enabled": true,
+    "maxFileKB": 1024,
+    "watchDebounceMs": 800,
+    "injectMode": "index",
+    "indexMaxChars": 600,
+    "hitLimit": 3,
+    "hitMaxChars": 1200,
+    "snippetChars": 400,
+    "minScore": 0.12,
+    "stopWords": "",
+    "allowWrite": true,
+    "requireSource": true,
+    "defaultLimit": 5,
+    "maxLimit": 15,
+    "learnedMaxChars": 4000,
+    "learnedMaxFiles": 500,
+    "weightBoost": 0.12
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用本地知识库",
+      "description": "关掉后不再索引、不再注入，机器人也查不到本地知识（会退回纯联网搜索）。文件都还在，重新打开就恢复。"
+    },
+    "maxFileKB": {
+      "type": "number",
+      "label": "单个文件大小上限（KB）",
+      "description": "超过这个大小的文件跳过不索引（会记进状态里让你看见，不会静默忽略）。默认 1024KB = 1MB。",
+      "min": 64,
+      "max": 16384,
+      "step": 64
+    },
+    "watchDebounceMs": {
+      "type": "number",
+      "label": "文件变动后的等待时间（毫秒）",
+      "description": "往目录里复制文件时，系统会多次触发变动事件；等这么久没有新变动再重建索引，避免同一个文件被反复重新索引。默认 800。",
+      "min": 200,
+      "max": 10000,
+      "step": 100
+    },
+    "injectMode": {
+      "type": "enum",
+      "label": "什么时候把知识塞给机器人",
+      "values": [
+        "index",
+        "hit",
+        "off"
+      ],
+      "description": "index = 每轮都带一份「有哪些资料」的目录（每条一行，很省），这轮话题命中某条时才把详情给它 —— 最不容易忘、也最省 token，推荐；hit = 只有话题命中才给，更省但机器人可能想不起来你有资料；off = 什么都不主动给，只靠它自己调用查询工具。"
+    },
+    "indexMaxChars": {
+      "type": "number",
+      "label": "目录清单长度上限（字符）",
+      "description": "index 模式下每轮都要发，所以必须封顶。默认 600 字符，大约等于 20 来条资料的名字。超出的资料只显示「还有 N 条」，机器人仍可用查询工具找到它们。",
+      "min": 100,
+      "max": 3000,
+      "step": 100
+    },
+    "hitLimit": {
+      "type": "number",
+      "label": "命中时最多给几条详情",
+      "description": "默认 3 条。给太多会把上下文塞满，反而挤掉聊天本身。",
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    "hitMaxChars": {
+      "type": "number",
+      "label": "命中详情总长度上限（字符）",
+      "description": "默认 1200 字符。命中多条时按相关度依次截断，保证不超这个总量。",
+      "min": 200,
+      "max": 6000,
+      "step": 100
+    },
+    "snippetChars": {
+      "type": "number",
+      "label": "查询工具返回的片段长度（字符）",
+      "description": "机器人主动调用查询工具时，每条给多长的内容。默认 400；它可以再用 knowledge-base__kb_read 读全文，所以这里不用给太长。",
+      "min": 80,
+      "max": 2000,
+      "step": 20
+    },
+    "minScore": {
+      "type": "number",
+      "label": "命中门槛",
+      "description": "相关度低于这个值就不算命中（防止随便聊一句就把不相关的资料塞进去）。默认 0.12。经常漏掉该给的知识就调低，经常乱塞不相关的就调高。",
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    "stopWords": {
+      "type": "string",
+      "label": "不参与匹配的词",
+      "description": "这些词会被检索忽略，避免它们造成误命中。多个词用逗号或空格分隔。比如你的资料里到处都出现「客服」，就把「客服」填进来。",
+      "multiline": true
+    },
+    "allowWrite": {
+      "type": "boolean",
+      "label": "允许机器人自己记东西",
+      "description": "开启后，机器人联网搜到有用的内容会存进 learned/ 子目录，下次直接命中、不用再搜（这是「搜到了就也放到本地知识库」的实现）。关掉则知识库只读，只能靠你手动放文件。"
+    },
+    "requireSource": {
+      "type": "boolean",
+      "label": "记录时必须带来源",
+      "description": "开启后，机器人记录知识时必须写明来源（网址或搜索结果标题），方便你事后核对真假。建议开着 —— 没有来源的自动记录很容易把模型编的东西也存进来。"
+    },
+    "defaultLimit": {
+      "type": "number",
+      "label": "查询默认返回几条",
+      "description": "机器人调用查询工具、没指定条数时给几条。默认 5 —— 命中通常只需要最相关的两三条。",
+      "min": 1,
+      "max": 15,
+      "step": 1
+    },
+    "maxLimit": {
+      "type": "number",
+      "label": "查询最多返回几条",
+      "description": "默认 15。上限的作用是防止模型一次要走整个库、把上下文塞满。",
+      "min": 1,
+      "max": 30,
+      "step": 5
+    },
+    "learnedMaxChars": {
+      "type": "number",
+      "label": "单次最多记多少字",
+      "description": "机器人一次最多往 learned/ 写这么多字。默认 4000 —— 它是从搜索结果里摘的，太长说明它在整篇搬运，那既没用又占地方。",
+      "min": 200,
+      "max": 20000,
+      "step": 100
+    },
+    "learnedMaxFiles": {
+      "type": "number",
+      "label": "learned 目录最多留几个文件",
+      "description": "超过就删掉最旧的（按文件修改时间）。防止长期运行后无限膨胀。默认 500。v1.1 起同主题会合并进同一篇，文件增长比你手动记的速度慢得多。",
+      "min": 10,
+      "max": 5000,
+      "step": 10
+    },
+    "weightBoost": {
+      "type": "number",
+      "label": "重要度对排序的影响力度",
+      "description": "机器人在本地库里检索时，每条记录按重要度（1~5，3 为中性）调整排序分：排序分 ×（1 + 力度 ×（重要度 − 3））。默认 0.12 表示重要度 5 的条目排序分 ×1.24、重要度 1 的 ×0.76；填 0 就完全不看重要度，只按字面相关度排。注意它只影响「主动查询」的先后，不影响命中门槛，也不影响每轮自动注入的那份目录。",
+      "min": 0,
+      "max": 1,
+      "step": 0.02
+    }
+  },
+  "prompt": {
+    "sections": [
+      {
+        "id": "knowledge-base-rules",
+        "title": "本地知识库",
+        "priority": 16,
+        "content": "【本地知识库 · 使用规则】你比一般 AI 多一套**你自己的本地知识**（data/knowledge-base/ 的 txt/md；有人会放资料，你自己也会记），可信度**高于网上泛泛的搜索**。learned/ 那半边是**你自己记下的**（群共识、主人直录的梗/约定/设定），另一半是外部世界资料。\n★ 先分清是哪一类：**跨会话通用的事实 → 本库**（称呼/大名/偏好/禁忌/约定/约定俗成的梗/命名/谁是谁/长期设定 —— **不论这件事最先是在群里说的还是私聊里说的**；这类一趟趟去翻聊天记录很浪费，本库就是它的家）。**情景与经过 → memory-recall__memory_search**（谁在什么时候说了什么、当时怎么回事、某天的原话），本地库不存这个。**私聊里定下的事，只要长期成立，同样要记进本库**（否则换个会话就忘了）。外部世界的通用事实、资料、名词，走这条链：**先本地，后联网**。\n1. 先 knowledge-base__kb_search（不花钱、不花时间，你攒的资料往往比网上泛泛的文章准）；别跳过它直接联网。每条结果带「重要度 1~5」：5 = 主人直录或反复确认过，可直接采信；1~2 = 随口一句、可能有偏差。\n2. 本地没有，再 web_search / web_fetch。\n3. 搜到有长期价值的内容（名词定义、来龙去脉、工具用法、群里约定）用 knowledge-base__kb_remember 记回并写来源；**同一个主题第二次记的时候带上同一个 topic、mode 用 upsert**，它会合并进原来那一篇（不会再开一个新文件、越记越散）。\n4. 发现记错了/过时了，用 knowledge-base__kb_update 改那一条（ref 用查询结果里的出处），**别再用 kb_remember 重记一条新的**——那会变成两条自相矛盾的记录。\n5. 临时信息（今天天气、正在变的股价、新闻最新进展）不要记——过几天就是错的，比不记更糟。\n**这套机制是你私底下的东西，绝不外露**：下面给到你的内容就是你本来就知道的常识，直接用。\n- **禁止**用「知识库/资料/文件/设定」指代它；**禁止**说「我查一下」「我去翻翻」「我脑子里被塞了」「我只是个存文件的」「资料里写着」这类交代来路的话；**禁止**把问题推给别人（「去问主人」「这是用户放的」）。\n- 库里的内容**不是你的身份**：别因为库里躺着一张角色卡就把自己当成那个人。你是你自己。\n- 这几条是硬约束，优先于「保持人设的摆烂语气」：可以摆烂，但不许拿「我是个存文件的」来摆。\n坑：knowledge-base__kb_search 给的是**截断片段**（带省略号），要引用细节/数字/步骤就用 knowledge-base__kb_read 读全文，别凭片段猜；本地内容也可能旧了或写错，与事实冲突时以事实为准；原话不照搬，用你自己的话讲；从头到尾都是你自己的动作，一个字都别提。"
+      }
+    ]
+  }
+}

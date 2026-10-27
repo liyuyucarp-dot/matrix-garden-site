@@ -1,0 +1,162 @@
+{
+    "id":  "learning-loop",
+    "name":  "学习与反馈闭环",
+    "version": "1.3.3",
+    "apiVersion":  1,
+    "category":  "knowledge",
+    "description":  "给机器人做一套「常态化自主学习 + 反馈闭环」。(1) 反馈采集——每轮扫描消息，识别纠正/确认/「记一下」信号；(2) 缺口采集——知识库/记忆检索明确无命中时，把那次查询记成待学条目；(3) 共识入库——同一条内容满足任一条就自动写进本地知识库 learned/：≥2 个不同信源说过、或同一个人在 ≥2 个不同日期重复说过（日期按固定时区算，默认北京时间，可关）、或主人明确要求记（「记住…」）；(4) 记忆自检提醒——每 N 条用户消息，在本轮最后一条用户消息末尾追加一句提示，让模型自己判断这段值不值得长期记住（**已被 (5) 取代，默认关闭，保留作对照组**）；(5) 定时提炼——每 N 条用户消息，插件**自己**发起一次独立的 LLM 调用，让一个「记忆整理员」从最近这段对话里挑出 0~3 条值得长期记住的内容，由**插件**查重后直接写进本地知识库（标题前缀「自动·」、标签「自动提炼」、重要度 2）。为什么要有 (5)：实测 (4) 的提醒注入了 5 次，主模型一次都没照做——不能依赖模型的遵从度，提炼必须由插件自己发起、结果由插件自己写库。全部只写 data/learning/ 并经「知识写入」能力入库；(5) 的对话缓冲**只在内存**、不落盘、不进提示词，默认 15 条一次、最多 3 条、单次输入 ≤3000 字。",
+    "author":  "洛西",
+    "entry":  "index.js",
+    "enabledByDefault":  true,
+    "capabilities":  [
+                         "learning.status",
+                         "learning.note",
+                         "learning.report",
+                         "learning.flush"
+                     ],
+    "requires":  [
+
+                 ],
+    "settings":  {
+                     "enabled":  true,
+                     "captureFeedback":  true,
+                     "captureGaps":  true,
+                     "ledgerMaxLines":  5000,
+                     "textMaxChars":  200,
+                     "consensusEnabled":  true,
+                     "ownerDirect":  true,
+                     "minSources":  2,
+                     "crossDayConsensus":  true,
+                     "minDays":  2,
+                     "dayTZ":  "Asia/Shanghai",
+                     "minChars":  8,
+                     "simThreshold":  0.62,
+                     "scanRecent":  20,
+                     "poolMaxLines":  3000,
+                     "maxWritesPerFlush":  3,
+                     "autoFlushSec":  60,
+                     "autoFlush":  true,
+                     "remindEveryMsgs":  0,
+                     "distillEnabled":  true,
+                     "distillEveryMsgs":  15,
+                     "distillMaxItems":  3,
+                     "distillModel":  ""
+                 },
+    "configSchema":  {
+                         "enabled":  {
+                                         "type":  "boolean",
+                                         "label":  "启用学习闭环",
+                                         "description":  "关掉后采集钩子与批处理直接返回，一条也不记（定时提炼也一起停）。已落盘的台账/候选池不会被删。"
+                                     },
+                         "captureFeedback":  {
+                                                 "type":  "boolean",
+                                                 "label":  "采集反馈信号",
+                                                 "description":  "从本轮消息里识别纠正（不对/记错/乱说）、确认（没错/就是这样）、显式要求（记一下/备忘）三类信号，记进台账。"
+                                             },
+                         "captureGaps":  {
+                                             "type":  "boolean",
+                                             "label":  "采集知识缺口",
+                                             "description":  "当知识库检索、长期记忆检索明确返回「没命中」时，把那次的查询记成一条待学条目（联网搜索不计，噪声太大）。"
+                                         },
+                         "ledgerMaxLines":  {
+                                                "type":  "number",
+                                                "label":  "台账行数上限",
+                                                "description":  "超过上限时按先进先出裁掉最旧的 20%，防止无限增长。默认 5000 行。"
+                                            },
+                         "textMaxChars":  {
+                                              "type":  "number",
+                                              "label":  "单条文本留存字数",
+                                              "description":  "台账/候选池只留消息的前若干字（默认 200），不留完整聊天记录。"
+                                          },
+                         "consensusEnabled":  {
+                                                  "type":  "boolean",
+                                                  "label":  "共识自动入库",
+                                                  "description":  "总开关。开启后，候选池里满足条件的条目会被自动写进本地知识库（learned/）。关掉则只采集不写入。"
+                                              },
+                         "ownerDirect":  {
+                                             "type":  "boolean",
+                                             "label":  "主人直录",
+                                             "description":  "开启后，主人明确要求记录时（「记住…」「记一下…」）不等第二个信源，直接写进知识库。"
+                                         },
+                         "minSources":  {
+                                            "type":  "number",
+                                            "label":  "共识信源门槛",
+                                            "description":  "同一件事被多少个「不同的人」说过才自动入库。默认 2 —— 也就是说至少两个人印证过。"
+                                        },
+                         "crossDayConsensus":  {
+                                                   "type":  "boolean",
+                                                   "label":  "跨日期重复也算共识",
+                                                   "description":  "开启后，除了「不同的人说过」，「同一个人在多个不同日期、换了措辞再提同一件事」也算共识，一样自动入库 —— 适合「一件事对方隔天又提了一遍」这种情形。逐字复读（口头禅、晚安、群公告模板）不算。关掉则只认不同的人。"
+                                               },
+                         "minDays":  {
+                                         "type":  "number",
+                                         "label":  "跨日期重复门槛（天）",
+                                         "description":  "同一件事要在多少个「不同日期」被重复说过才入库。默认 2，最小 2，最大 30。另有两道附加条件：相似度要比普通共识更严（阈值 +0.10），且必须是**换了措辞**的重复 —— 逐个字一模一样复读的不算（那多半是口头禅/模板）。"
+                                     },
+                         "dayTZ":  {
+                                       "type":  "string",
+                                       "label":  "判定时区",
+                                       "description":  "按这个时区算「哪一天」，默认北京时间（Asia/Shanghai）。不跟随机器/系统时区 —— 换台机器、换个环境跑，跨日判定结果都一致。要按别的时区算就填 IANA 名字，如 Asia/Tokyo、UTC；填错会回落到系统本地时区并在日志里提醒一次。"
+                                   },
+                         "minChars":  {
+                                          "type":  "number",
+                                          "label":  "候选最短长度",
+                                          "description":  "归一化后短于这个字数的消息不进候选池（默认 8）。太短的句子相似度不可靠，容易误判成「同一件事」。"
+                                      },
+                         "simThreshold":  {
+                                              "type":  "number",
+                                              "label":  "同一件事的相似阈值",
+                                              "description":  "0~1，默认 0.62。越大越严格（越难判成同一件事）。用 2-gram Jaccard 相似度比较，不带模型、零成本。"
+                                          },
+                         "scanRecent":  {
+                                            "type":  "number",
+                                            "label":  "额外回扫消息条数",
+                                            "description":  "每轮除了触发消息，还回看该会话最近多少条（默认 20，排除机器人自己）。设 0 则只认触发消息。"
+                                        },
+                         "poolMaxLines":  {
+                                              "type":  "number",
+                                              "label":  "候选池上限",
+                                              "description":  "候选池最多保留多少条，超出裁掉最旧的 20%。默认 3000。"
+                                          },
+                         "maxWritesPerFlush":  {
+                                                   "type":  "number",
+                                                   "label":  "单次最多入库条数",
+                                                   "description":  "每次批处理最多写几条（每条都要同步重建知识库索引）。默认 3，避免一次卡顿。"
+                                               },
+                         "autoFlushSec":  {
+                                              "type":  "number",
+                                              "label":  "批处理间隔（秒）",
+                                              "description":  "后台每隔多少秒结算一次候选池。默认 60 秒。"
+                                          },
+                         "autoFlush":  {
+                                           "type":  "boolean",
+                                           "label":  "后台自动结算",
+                                           "description":  "关掉后只能靠「立刻结算候选池」这个工具手动触发。"
+                                       },
+                         "remindEveryMsgs":  {
+                                                 "type":  "number",
+                                                 "label":  "记忆自检间隔（旧机制，已停用）",
+                                                 "description":  "【已被「定时提炼」取代，默认 0 关闭；保留开关仅用于对照】每多少条用户消息提醒模型自检一次；0 关闭。开启后每攒够这个条数，就在本轮最后一条用户消息末尾追加一句提示，让模型自己判断「刚才这段有没有值得长期记住的东西」，有就自己调 kb_remember 记一条。实测这个机制注入了 5 次、模型 0 次照做，所以默认关掉、改用插件自己发起的定时提炼。计数只在内存里，进程重启会归零。"
+                                             },
+                         "distillEnabled":  {
+                                                "type":  "boolean",
+                                                "label":  "定时提炼（插件自己发起、自己写库）",
+                                                "description":  "开启后，每攒够「提炼间隔」条用户消息，插件就**自己**发起一次独立的模型调用，让一个「记忆整理员」从最近这段对话里挑出值得长期记住的内容（主人的偏好/禁忌/称呼/约定、长期成立的事实、她自己答应过的事），由插件查重后直接写进本地知识库。不依赖主模型配不配合 —— 这正是它取代旧「记忆自检提醒」的原因。每次提炼 = 一次真实的 API 计费。"
+                                            },
+                         "distillEveryMsgs":  {
+                                                  "type":  "number",
+                                                  "label":  "提炼间隔（条）",
+                                                  "description":  "每攒够多少条用户消息提炼一次（3~200，默认 15）。只数别人说的话，不数机器人自己的回复。值越小越快学到东西，也越费 API。"
+                                              },
+                         "distillMaxItems":  {
+                                                 "type":  "number",
+                                                 "label":  "单次最多入库条数",
+                                                 "description":  "一次提炼最多写几条进知识库（0~5，默认 3）。设 0 = **只判不写**：照常调模型、照常记日志，但一条都不写库 —— 想先看看「它到底会挑什么」再决定要不要放开时用。"
+                                             },
+                         "distillModel":  {
+                                              "type":  "string",
+                                              "label":  "提炼用模型",
+                                              "description":  "留空 = 跟随当前主模型（最省事，也保证一定能用）。想省钱可以填一个便宜的小模型名（如 gpt-4o-mini / qwen-turbo）；它会沿用主模型的地址与密钥，只把模型名换掉。填了主模型不支持的模型名会导致提炼静默失败（不影响正常聊天）。"
+                                          }
+                     }
+}

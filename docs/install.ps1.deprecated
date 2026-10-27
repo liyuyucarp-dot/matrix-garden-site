@@ -1,0 +1,164 @@
+﻿<#
+  矩阵庭院 · 完整包 —— 一键安装
+  用法：
+    powershell -ExecutionPolicy Bypass -File .\install.ps1
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -AppDir "D:\QQAgent\resources\app" -WithCorePatch -Yes
+#>
+param(
+  [string]$AppDir = "",
+  [switch]$WithCorePatch,
+  [switch]$Yes,
+  [switch]$DryRun
+)
+
+$ErrorActionPreference = "Stop"
+$Here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$BackupDir = Join-Path $Here ("_backup_" + $Stamp)
+
+function Write-Head($t) { Write-Host ""; Write-Host ("=" * 58) -ForegroundColor DarkGray; Write-Host $t -ForegroundColor Cyan; Write-Host ("=" * 58) -ForegroundColor DarkGray }
+function Write-Ok($t)   { Write-Host ("  [OK]   " + $t) -ForegroundColor Green }
+function Write-Skip($t) { Write-Host ("  [SKIP] " + $t) -ForegroundColor DarkGray }
+function Write-Warn2($t){ Write-Host ("  [!!]   " + $t) -ForegroundColor Yellow }
+function Write-Err2($t) { Write-Host ("  [ERR]  " + $t) -ForegroundColor Red }
+
+# ── 1. 找 app 目录 ──────────────────────────────────────────────────────
+function Resolve-AppDir {
+  if ($AppDir -ne "") {
+    if (Test-Path (Join-Path $AppDir "src")) { return (Resolve-Path $AppDir).Path }
+    Write-Err2 ("指定的目录不像 QQ Agent 的 resources\app：" + $AppDir)
+    return ""
+  }
+  $candidates = @()
+  foreach ($root in @("$env:LOCALAPPDATA\Programs", "$env:ProgramFiles", "${env:ProgramFiles(x86)}", "D:\", "E:\", "F:\")) {
+    if (-not (Test-Path $root)) { continue }
+    try {
+      Get-ChildItem $root -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match "QQ\s*Agent|QQAgent" } |
+        ForEach-Object {
+          $p = Join-Path $_.FullName "resources\app"
+          if (Test-Path (Join-Path $p "src")) { $candidates += $p }
+        }
+    } catch { }
+  }
+  $candidates = $candidates | Select-Object -Unique
+  if ($candidates.Count -eq 1) {
+    Write-Ok ("找到：" + $candidates[0])
+    return $candidates[0]
+  }
+  if ($candidates.Count -gt 1) {
+    Write-Host "  找到多个候选：" -ForegroundColor Yellow
+    for ($i = 0; $i -lt $candidates.Count; $i++) { Write-Host ("    [" + ($i+1) + "] " + $candidates[$i]) }
+    $sel = Read-Host "  选哪个（回车=1）"
+    if ($sel -eq "") { $sel = "1" }
+    $idx = [int]$sel - 1
+    if ($idx -ge 0 -and $idx -lt $candidates.Count) { return $candidates[$idx] }
+  }
+  Write-Warn2 "没自动找到。请把 QQ Agent 的 resources\app 目录拖进来（或粘贴路径）："
+  $manual = Read-Host "  路径"
+  if ($manual -ne "" -and (Test-Path (Join-Path $manual.Trim('"') "src"))) { return $manual.Trim('"') }
+  return ""
+}
+
+Write-Head "矩阵庭院 · 完整包 安装程序"
+if ($DryRun) { Write-Warn2 "演练模式：只看会动哪些文件，不真复制" }
+
+$Target = Resolve-AppDir
+if ($Target -eq "") { Write-Err2 "没有可用的目标目录，退出。"; exit 1 }
+Write-Host ("  目标：" + $Target) -ForegroundColor White
+
+# ── 2. 备份要用到的函数 ──────────────────────────────────────────────────
+function Backup-Item($path) {
+  if (-not (Test-Path $path)) { return }
+  $rel = $path.Substring($Target.Length).TrimStart("\")
+  $dst = Join-Path $BackupDir $rel
+  $parent = Split-Path -Parent $dst
+  if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+  if ($DryRun) { Write-Skip ("会备份：" + $rel); return }
+  Copy-Item $path $dst -Recurse -Force
+}
+
+# ── 3. 复制 技能 / 插件 ─────────────────────────────────────────────────
+Write-Head "复制组件"
+
+# v2.2：sleep-mood 是整体替换，而宿主的 lib/*.js 走 ESM 缓存 —— 宿主在运行中覆盖，
+# 重扫后可能出现「index.js 是新的、lib 还是旧的」混合态（会直接抛错）。
+# 这里只提醒不强制：有人习惯先复制完再一起重启。
+$running = @(Get-Process -Name "QQ Agent" -ErrorAction SilentlyContinue).Count
+if ($running -gt 0) {
+  Write-Warn2 ("检测到 QQ Agent 正在运行（" + $running + " 个进程）—— 建议先退出再安装。")
+  Write-Host "          sleep-mood v2.2 是整体替换，运行时覆盖会有新旧混用的风险。" -ForegroundColor DarkGray
+}
+
+$jobs = @()
+foreach ($k in @("skills", "plugins")) {
+  $srcRoot = Join-Path $Here $k
+  if (-not (Test-Path $srcRoot)) { continue }
+  Get-ChildItem $srcRoot -Directory | ForEach-Object {
+    $jobs += [pscustomobject]@{ Kind = $k; Name = $_.Name; Src = $_.FullName; Dst = (Join-Path (Join-Path $Target $k) $_.Name) }
+  }
+}
+
+$count = 0
+foreach ($j in $jobs) {
+  if (Test-Path $j.Dst) { Backup-Item $j.Dst }
+  if ($DryRun) { Write-Skip ($j.Kind + "/" + $j.Name); continue }
+  if (-not (Test-Path (Split-Path -Parent $j.Dst))) { New-Item -ItemType Directory -Path (Split-Path -Parent $j.Dst) -Force | Out-Null }
+  Copy-Item $j.Src $j.Dst -Recurse -Force
+  Write-Ok ($j.Kind + "/" + $j.Name)
+  $count++
+}
+Write-Host ("  共 " + $count + " 个组件") -ForegroundColor White
+
+# v2.2：从 1.x 升上来的机器，sleep-mood 目录里会残留已退役模块与 .bak（覆盖不会删它们）。
+# 不清理也能跑（新代码不 import 它们），但容易让人看错。这里只提示，不动手。
+$smDir = Join-Path (Join-Path $Target "plugins") "sleep-mood"
+if (Test-Path (Join-Path $smDir "lib\hp-system.js")) {
+  Write-Warn2 "旧的 sleep-mood 残留文件还在（hp-system.js / favor-link.js / *.bak-*）"
+  Write-Host ("          建议先移走再启动：" + $smDir) -ForegroundColor DarkGray
+  Write-Host "          详见 更新日志-V2.2.0.md 第五节②" -ForegroundColor DarkGray
+}
+
+# ── 4. 核心补丁 ─────────────────────────────────────────────────────────
+Write-Head "核心补丁（9 件，建议全打）"
+$coreRoot = Join-Path $Here "核心补丁"
+$doCore = $false
+if (-not (Test-Path $coreRoot)) {
+  Write-Skip "包里没有 核心补丁 目录"
+} elseif ($WithCorePatch) {
+  $doCore = $true
+} elseif ($Yes) {
+  Write-Skip "未指定 -WithCorePatch，跳过"
+} else {
+  Write-Host "  核心补丁覆盖/插入宿主文件（已备份），换取这些能力：" -ForegroundColor DarkGray
+  Write-Host "    · reply-rescue.js  拦住「工具调用残骸」被发到群里" -ForegroundColor DarkGray
+  Write-Host "    · prompt.js        技能段按易变度排序 + v2 新组件提示词段" -ForegroundColor DarkGray
+  Write-Host "    · half-life / memory-people / memory-audit   life-system 与 favor-core 的静态依赖" -ForegroundColor DarkGray
+  Write-Host "    · manager / plugin-loader / app   后台任务服务钩子（矩阵庭院必需，缺了静默失声）" -ForegroundColor DarkGray
+  $ans = Read-Host "  要打吗？(y/N)"
+  if ($ans -match "^(y|Y)") { $doCore = $true }
+}
+
+if ($doCore) {
+  $apply = Join-Path $coreRoot "apply-core-patch.ps1"
+  if (Test-Path $apply) {
+    $args2 = @("-File", $apply, "-AppDir", $Target)
+    if ($DryRun) { $args2 += "-DryRun" }
+    if ($Yes) { $args2 += "-Yes" }
+    & powershell -ExecutionPolicy Bypass @args2
+  } else { Write-Err2 "缺 apply-core-patch.ps1" }
+  Write-Warn2 "核心补丁需要【完整重启】程序才生效"
+}
+
+Write-Head "下一步（必做）"
+Write-Host "  1) 打开设置 → 技能 → 矩阵庭院，填这三项：" -ForegroundColor Yellow
+Write-Host "       homeChatKey  = group:你的群号        ← 不填她不会自动出门"
+Write-Host "       cardTargets  = group:你的群号        ← 明信片投给谁"
+Write-Host "       以及 sleep-mood 插件里的 travelGroups = 你的群号"
+Write-Host "  2) 插件页确认 mind-wish / think-gate / bili-whale 三个开关是开的"
+Write-Host "  3) 想在私聊里被主动找 ⇒ 关掉 silence-ping 的「演练模式」"
+Write-Host "  4) 【重启程序】—— 技能和核心补丁都要重启才生效"
+Write-Host ""
+if (Test-Path $BackupDir) { Write-Host ("  备份在：" + $BackupDir) -ForegroundColor DarkGray }
+Write-Host "  装完看 安装说明.md 的「验证清单」，五条全过才算好。" -ForegroundColor DarkGray
+Write-Host ""

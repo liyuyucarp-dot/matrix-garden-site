@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>爱看 / 不爱看关键词</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="sea">
+    <header class="top">
+      <div class="brand">
+        <div class="fin">🐳</div>
+        <div>
+          <h1>爱看 / 不爱看关键词</h1>
+          <p id="subtitle">一行一条；用来给 B 站选题加分/扣分</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="refresh" type="button">重新读取</button>
+      </div>
+    </header>
+
+    <div class="grid two" style="margin-top: 22px;">
+      <article class="box">
+        <h2>爱看什么</h2>
+        <p class="hint">选题器按这些词搜索并加分。留空则只看热门/排行/关注。</p>
+        <textarea id="like" class="kw-textarea" rows="12" spellcheck="false" placeholder="AI 工具与插件&#10;鬼畜与怀旧向剪辑&#10;猫咪"></textarea>
+      </article>
+      <article class="box">
+        <h2>不爱看什么</h2>
+        <p class="hint">标题/标签/简介命中这些词的候选会被扣分甚至排除。</p>
+        <textarea id="dislike" class="kw-textarea" rows="12" spellcheck="false" placeholder="带货&#10;擦边&#10;标题党&#10;纯搬运"></textarea>
+      </article>
+    </div>
+
+    <article class="box">
+      <div class="persona-form">
+        <button id="save" type="button" class="primary">保存关键词</button>
+        <span class="hint">保存后下一轮选题生效；不影响已经看过的记录。</span>
+      </div>
+      <div id="status" class="persona-status" role="status"></div>
+    </article>
+
+    <footer>
+      <span>保存只改「B站鲸鱼」自己的 likeKeywords / dislikeKeywords 设置</span>
+      <span id="updated">—</span>
+    </footer>
+  </div>
+  <script src="./keywords.js" defer></script>
+</body>
+</html>

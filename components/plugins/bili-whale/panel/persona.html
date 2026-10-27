@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>选择宿主人设卡</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="sea">
+    <header class="top">
+      <div class="brand">
+        <div class="fin">🐳</div>
+        <div>
+          <h1>选择宿主人设卡</h1>
+          <p id="subtitle">B站鲸鱼写日记、分享评论、回复时用哪张卡说话</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="refresh" type="button">刷新名单</button>
+      </div>
+    </header>
+
+    <article class="box" style="margin-top: 22px;">
+      <h2>人设卡</h2>
+      <p class="hint">名单来自宿主：内置人设、宿主自定义人设、「按会话人设」人设库。只列名字与来源，不显示角色卡正文。</p>
+      <div class="persona-form">
+        <select id="card" class="persona-select">
+          <option value="">跟随宿主当前（留空）</option>
+        </select>
+      </div>
+      <div id="selected" class="persona-selected muted">加载中…</div>
+    </article>
+
+    <article class="box">
+      <h2>附加文本</h2>
+      <label class="field-label" for="personaExtra">附加规则（追加在角色卡后面，无论用哪张卡）</label>
+      <textarea id="personaExtra" class="persona-textarea" rows="4" spellcheck="false" placeholder="例如：写 B 站日记时不要太黏，像随手记；评论不要用网络烂梗。"></textarea>
+      <label class="field-label" for="personaText">插件内自定义人设卡正文（只有「说话用哪套人设 = custom」时才用）</label>
+      <textarea id="personaText" class="persona-textarea" rows="8" spellcheck="false" placeholder="把角色卡正文贴在这里。想从宿主卡里选就不要填这里。"></textarea>
+      <p class="hint">这两个字段和下拉选择一起保存；原生设置弹窗没有多行输入框，所以放在这里编辑。</p>
+      <div class="persona-form" style="margin-top: 14px;">
+        <button id="save" type="button" class="primary">保存选择与附加文本</button>
+      </div>
+      <div id="status" class="persona-status" role="status"></div>
+    </article>
+
+    <article class="box">
+      <h2>当前生效</h2>
+      <div id="current" class="kv muted">加载中…</div>
+      <p class="hint" style="margin-top: 12px;">
+        也可以直接在 QQ 里发 <code>/鲸鱼 人设</code> 看名单、<code>/鲸鱼 人设 &lt;序号或名字&gt;</code> 切换，
+        <code>/鲸鱼 人设 默认</code> 恢复跟随宿主当前。
+      </p>
+    </article>
+
+    <footer>
+      <span>保存只改「B站鲸鱼」自己的 personaCard 设置，不动宿主的人设卡正文</span>
+      <span id="updated">—</span>
+    </footer>
+  </div>
+  <script src="./persona.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "id": "courtyard-map",
+  "name": "庭院与旅程",
+  "version": "1.1.1",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "把矩阵庭院和旅程画进一张地图：她此刻在哪、旅伴们在干什么、庭院设施与相册，一眼看全。旅伴页带立绘档案（能力 / 技能解锁 / 同行异世界 / 累计趟数 / 来历性格），另有「同行足迹」页按旅伴列出一起去过的城市。只读展示，30 秒自动刷新。",
+  "author": "local",
+  "enabledByDefault": true,
+  "capabilities": [],
+  "requires": [],
+  "settings": {
+    "enabled": true
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用庭院与旅程",
+      "description": "关闭后停止刷新快照；面板页面本身是静态只读的。"
+    },
+    "openMap": {
+      "type": "action",
+      "label": "庭院与旅程",
+      "button": "打开庭院与旅程",
+      "panel": "panel/map.html",
+      "description": "地图（当前位置/已解锁地点）· 庭院（设施与近况）· 旅伴（点开有档案与立绘）· 足迹（和谁去过哪座城）· 相册。只读视图。"
+    }
+  },
+  "prompt": null
+}

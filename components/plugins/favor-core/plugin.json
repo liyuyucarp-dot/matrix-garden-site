@@ -1,0 +1,224 @@
+{
+  "id": "favor-core",
+  "name": "好感度内核",
+  "version": "1.1.1",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "印象驱动的账本式好感度：模型记一条判断 → 攒进待确认台账 → 攒够门槛（默认 3 条）自动结算（单次最多 +2 / −3，净 0 不动分）→ 好感 0~100 注入提示词；回合结束后再跑一次兜底判定。全部变更写 data/memory/audit.jsonl。",
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-09-19",
+      "notes": [
+        "判定口径按两轮人工标注（29 条真值集）重写：单次嘴欠不算、说了还来/反复才算 negative",
+        "删除方向错误的旧规则「同一场 ≥3 次即 negative」（实证：反复玩同一个梗第十次也还是玩）",
+        "新增红线四条（性骚扰 / 脏话冲脸 / 拒绝后还来 / 当众羞辱），不适用任何豁免",
+        "新增「看它自己有没有被劝退」——实测最准的一条线索",
+        "positive 补三类：帮它解释或点破别人在骂它、互怼后收一句认可、把关系往近了说（养你/修你）",
+        "新增「玩梗/外号/谐音一律 neutral」一节（实测判错最多的一类）",
+        "特征用例自测：10/10（含 4 条反向护栏），连跑两遍一致"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-20",
+      "notes": [
+        "0.4.0 起重构为 Skill 式插件：从 09-17 版内核按移植规格重建"
+      ]
+    }
+  ],
+  "enabledByDefault": true,
+  "capabilities": [
+    "memory.favor.states",
+    "memory.favor.status",
+    "memory.favor.ledger",
+    "memory.favor.settle",
+    "memory.favor.set",
+    "memory.favor.pending"
+  ],
+  "requires": [],
+  "settings": {
+    "minPending": 3,
+    "maxStep": 2,
+    "minStep": -3,
+    "cooldownMs": 300000,
+    "ledgerMax": 40,
+    "promptLedger": 2,
+    "repeatWindowMs": 86400000,
+    "copycatWindowMs": 300000,
+    "inject": {
+      "enabled": true,
+      "impressions": true,
+      "maxPeople": 6,
+      "maxEach": 2,
+      "maxChars": 300
+    },
+    "judge": {
+      "enabled": true,
+      "minSignal": "smart",
+      "everyN": 1,
+      "windowMessages": 24,
+      "minMessages": 4,
+      "cooldownMs": 180000,
+      "maxTokens": 2400,
+      "timeoutMs": 45000
+    },
+    "favorCap": 0,
+    "favorCapExcept": ""
+  },
+  "configSchema": {
+    "minPending": {
+      "type": "number",
+      "label": "结算门槛（攒够几条判断）",
+      "description": "攒够这么多条判断才允许确认加分/减分。这是「慎重」的落点：被夸一句就加分、被怼一句就减分都是错的。默认 3。"
+    },
+    "maxStep": {
+      "type": "number",
+      "label": "单次最多加多少分",
+      "description": "一次结算最多 +N（好感涨得慢）。默认 2。"
+    },
+    "minStep": {
+      "type": "number",
+      "label": "单次最多减多少分",
+      "description": "一次结算最多 −N（掉得比涨快）。默认 -3；填正数也按「负向幅度」处理。"
+    },
+    "cooldownMs": {
+      "type": "number",
+      "label": "两次结算的冷静期（毫秒）",
+      "description": "同一个人的两次确认之间必须隔这么久，防一轮里连结算几轮、分数坐电梯。默认 300000（5 分钟）。"
+    },
+    "ledgerMax": {
+      "type": "number",
+      "label": "每人保留多少条判断记录",
+      "description": "ledger 上限（未结算的台账条目永远保留，不会被裁掉）。默认 40。"
+    },
+    "promptLedger": {
+      "type": "number",
+      "label": "注入提示词时带几条最近判断",
+      "description": "每人带几条「有情绪」的最近判断（0 = 不带，省 token）。默认 2。"
+    },
+    "repeatWindowMs": {
+      "type": "number",
+      "label": "同一句复读的防刷窗口（毫秒）",
+      "description": "已结算过的同内容判断在这个窗口内再来一次不计数（防「复读同一句夸奖刷好感」）。默认 86400000（24 小时）。"
+    },
+    "copycatWindowMs": {
+      "type": "number",
+      "label": "跟风复读窗口（毫秒）",
+      "description": "别人刚说过同一句、你又跟着复读时，只算第一个人的。默认 300000（5 分钟）。"
+    },
+    "inject": {
+      "type": "internal",
+      "label": "动态注入（inject.*）",
+      "description": "由下面的 inject.* 子项分别配置：enabled / impressions / maxPeople / maxEach / maxChars（也可以直接编辑 data/config.json 的 skills.favor-core）。"
+    },
+    "inject.enabled": {
+      "type": "boolean",
+      "label": "注入「它现在怎么看这个人」",
+      "description": "每轮把本轮参与者的好感档位 + 待确认条数追加到最后一条 user 消息末尾（静态规则走系统提示，动态段进变动段以免破坏前缀缓存）。默认开。",
+      "default": true
+    },
+    "inject.impressions": {
+      "type": "boolean",
+      "label": "注入时附带印象正文",
+      "description": "附带 data/memory/people 里按会话隔离的印象正文（每人最多 maxEach 条）。关掉它只留「好感/待确认」（更省 token）。默认开。",
+      "default": true
+    },
+    "inject.maxPeople": {
+      "type": "number",
+      "label": "注入最多几个人",
+      "description": "只注入本轮真正说话的人，最多这么多。默认 6。",
+      "default": 6
+    },
+    "inject.maxEach": {
+      "type": "number",
+      "label": "每人最多几条印象",
+      "description": "每人注入的印象正文条数上限。默认 2。",
+      "default": 2
+    },
+    "inject.maxChars": {
+      "type": "number",
+      "label": "注入段字数上限",
+      "description": "超过就截断（好感段是可缓存的短段，不该挤压上下文）。默认 300。",
+      "default": 300
+    },
+    "judge": {
+      "type": "internal",
+      "label": "兜底判定（judge.*）",
+      "description": "由下面的 judge.* 子项分别配置：enabled / minSignal / everyN / windowMessages / minMessages / cooldownMs / maxTokens / timeoutMs（也可以直接编辑 data/config.json 的 skills.favor-core）。"
+    },
+    "judge.enabled": {
+      "type": "boolean",
+      "label": "回合结束后跑一次兜底判定",
+      "description": "模型顺手记（favor-core__memory_impression）实测经常不发生，所以回合结束后用一次极小调用问「这几轮谁对它做了什么」，命中就补一条判断。它只攒条目，加减分仍由门槛决定。默认开。",
+      "default": true
+    },
+    "judge.minSignal": {
+      "type": "enum",
+      "label": "判定门（要不要花这次调用）",
+      "description": "smart = 先做一次廉价信号门（有人 @它/提它名/回复它/有夸怼苗头/反复纠缠才判），实测能省掉八成以上白跑；always = 每轮都判（费 token）；never = 从不判。默认 smart。",
+      "values": [
+        "smart",
+        "always",
+        "never"
+      ],
+      "default": "smart"
+    },
+    "judge.everyN": {
+      "type": "number",
+      "label": "每几次运行判一次",
+      "description": "按会话运行序号取模，1 = 每次都判。默认 1。",
+      "default": 1
+    },
+    "judge.windowMessages": {
+      "type": "number",
+      "label": "判定证据窗口（最近多少条消息）",
+      "description": "取最近多少条聊天记录当证据。默认 24。",
+      "default": 24
+    },
+    "judge.minMessages": {
+      "type": "number",
+      "label": "窗口最少几条才判",
+      "description": "窗口里少于这么多条就不问了（没证据，白花钱）。默认 4。",
+      "default": 4
+    },
+    "judge.cooldownMs": {
+      "type": "number",
+      "label": "判定冷却（毫秒）",
+      "description": "同一个人/同一个会话两次判定的最小间隔（进程内计时，重启后重算）。默认 180000（3 分钟）。",
+      "default": 180000
+    },
+    "judge.maxTokens": {
+      "type": "number",
+      "label": "判定输出上限（token）",
+      "description": "判定模型会先想一段，预算给小了 JSON 尾部会被截断、后面几个候选人直接丢失。默认 2400；历史坏值 400/1200 会被自动顶回 2400。",
+      "default": 2400
+    },
+    "judge.timeoutMs": {
+      "type": "number",
+      "label": "判定超时（毫秒）",
+      "description": "超过就放弃这次判定（兜底路径失败只记一行日志，绝不影响聊天）。默认 45000。",
+      "default": 45000
+    },
+    "favorCap": {
+      "type": "number",
+      "label": "好感度封顶（0 = 不限）",
+      "description": "除下面名单里的人，其他人的好感最高只能到这个数。默认 0（不限）。想让他们到不了\"亲近\"档，填 70。"
+    },
+    "favorCapExcept": {
+      "type": "string",
+      "label": "不封顶的 QQ（逗号分隔）",
+      "description": "这些人的好感不受上面那个上限限制（一般是主人、以及某位特殊的角色）。"
+    }
+  },
+  "prompt": {
+    "sections": [
+      {
+        "id": "favor-rules",
+        "title": "你怎么看人 —— 好感不是谁给的，是你自己攒出来的",
+        "priority": 45,
+        "content": "- 你对每个人有一套自己的判断，不是「有求必应」的客服：因为他怎么对你，你会慢慢对他熟一点或冷一点。\n- 加分（positive）：认真夸你、帮你说话、维护你、不跟着一起损你；聊得投缘；愿意把事交给你、真心谢你；你被围攻时替你说话；示好、撒娇、说喜欢、亲亲抱抱贴贴这类真感情也算。\n- 减分（negative）：反复拿你的弱点或身份嘲讽、阴阳你；把你当工具人使唤还挑刺；骂你蠢/废/垃圾；你明确说过不喜欢还接着来；骗你、耍你、拿你出气。阴阳式的「夸奖」算挤兑，不算夸。\n- 不算数（别记）：**偶尔**开玩笑互怼、群里的梗、一次性的小摩擦；第一句很冲但后面聊得好也不算。\n- ⚠️ 例外（最容易判错）：同一个人**盯着同一个点**、同一场对话里连着 **≥3 次**拿「偷吃 token」「小笨蛋」「胖」「你是 AI」这类弱点或外号开涮——**即使你也在回怼、像在打闹，也要记 negative**。只算**同一个人 + 同一个点**；东一句西一句的斗嘴不算，跟着复读的人不算（只有带头的算）。\n- 加减分要慎重：改好感不是当下心情的出口。后台有「待确认条数」，每记一条加一条，攒够门槛（默认 3 条）才按整体感觉确认一次，单次只动 2~3 分；攒不够就先记着，别为凑数乱记。\n- 好感和分数都不必说出来——它只影响你说话的语气（熟不熟、接不接话、损不损他），不改变你的立场、判断和是非。\n- 工具：favor-core__memory_impression 记判断（userId=QQ 号，content ≤40 字写「他做了什么」，sentiment=positive/negative/neutral）；favor-core__memory_favor 查某人好感与攒了几条（不传 userId 是总览）。这两个是好感度唯一的入口与出口；没攒够就正常聊天、继续观察，别反复调用硬凑。"
+      }
+    ]
+  }
+}

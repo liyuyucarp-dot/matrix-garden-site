@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B站鲸鱼</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="sea">
+    <header class="top">
+      <div class="brand">
+        <div class="fin">🐳</div>
+        <div>
+          <h1>B站鲸鱼</h1>
+          <p id="subtitle">按作息自己刷 B 站、写两本日记、把值得的 @ 你</p>
+        </div>
+      </div>
+      <div class="actions">
+        <span id="clock" class="clock">--:--:--</span>
+        <button id="refresh" type="button">刷新</button>
+      </div>
+    </header>
+
+    <section class="cards" id="cards"></section>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="today" type="button">今日</button>
+      <button class="tab" data-tab="diary" type="button">两本日记</button>
+      <button class="tab" data-tab="persona" type="button">人设卡</button>
+      <button class="tab" data-tab="drafts" type="button">待审</button>
+      <button class="tab" data-tab="events" type="button">事件</button>
+    </nav>
+
+    <main>
+      <section class="panel active" id="panel-today">
+        <div class="grid two">
+          <article class="box">
+            <h2>今天的计划</h2>
+            <div id="plan" class="muted">加载中…</div>
+          </article>
+          <article class="box">
+            <h2>今天的额度</h2>
+            <div id="quota" class="muted">加载中…</div>
+          </article>
+        </div>
+        <article class="box">
+          <h2>她的近况</h2>
+          <div id="stats" class="kv muted">加载中…</div>
+        </article>
+        <article class="box">
+          <h2>最近醒来</h2>
+          <div id="lastWake" class="muted">加载中…</div>
+        </article>
+      </section>
+
+      <section class="panel" id="panel-diary">
+        <div class="diary-switch" id="diarySwitch">
+          <button class="chip active" data-which="public" type="button">给他的信</button>
+          <button class="chip" data-which="private" type="button">写给自己</button>
+        </div>
+        <article class="box">
+          <div id="diary" class="diary muted">加载中…</div>
+        </article>
+      </section>
+
+      <section class="panel" id="panel-drafts">
+        <article class="box">
+          <h2>待审回复</h2>
+          <p class="hint">默认不直接回陌生人。在 QQ 里发 <code>/鲸鱼 批准 &lt;id&gt;</code> 或 <code>/鲸鱼 拒绝 &lt;id&gt;</code>。</p>
+          <div id="drafts" class="muted">加载中…</div>
+        </article>
+      </section>
+
+      <section class="panel" id="panel-persona">
+        <div class="grid two">
+          <article class="box">
+            <h2>当前说话的人设</h2>
+            <div id="personaCurrent" class="kv muted">加载中…</div>
+          </article>
+          <article class="box">
+            <h2>怎么选</h2>
+            <p class="hint">
+              插件设置 →「说话用哪套人设」选 <code>host</code>，再点「宿主人设卡（下拉选择）」按钮，在下拉菜单里选一张；
+              不指定就跟随宿主当前会话的人设。<br />
+              也可以直接在 QQ 里发 <code>/鲸鱼 人设 &lt;序号或名字&gt;</code>，插件会写回设置；
+              <code>/鲸鱼 人设 默认</code> 恢复跟随宿主当前。<br />
+              角色卡正文不会在面板里显示，只列名单。
+            </p>
+          </article>
+        </div>
+        <article class="box">
+          <h2>宿主人设卡名单</h2>
+          <div id="personaCards" class="persona-list muted">加载中…</div>
+        </article>
+      </section>
+
+      <section class="panel" id="panel-events">
+        <article class="box">
+          <h2>事件流</h2>
+          <div id="events" class="events muted">加载中…</div>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      <span>数据只在这个插件的 storage 里 · 不显示任何 cookie</span>
+      <span id="updated">—</span>
+    </footer>
+  </div>
+  <script src="./app.js" defer></script>
+</body>
+</html>

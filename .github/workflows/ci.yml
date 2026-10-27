@@ -1,0 +1,72 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gates:
+    name: gates (${{ matrix.os }} / node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # 不 npm install：build-release.mjs 是零依赖的（ESLint 闸缺失时自动跳过）
+      - name: 七道闸（no zip）
+        run: node tools/build-release.mjs --no-zip
+
+  smoke:
+    name: install dry-run + eslint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 装 eslint（闸8）
+        run: npm install --no-save eslint@9
+      - name: 七道闸 + ESLint（strict）
+        run: node tools/build-release.mjs --no-zip --strict
+      # 造两个桩宿主，验证 install.mjs 的形态识别与幂等
+      - name: install.mjs 演练（源码树形态）
+        run: |
+          mkdir -p /tmp/host-src/src && touch /tmp/host-src/src/plugin-loader.js
+          node tools/install.mjs --app /tmp/host-src --components --dry-run
+      - name: install.mjs 演练（安装版形态 + 补丁）
+        run: |
+          mkdir -p /tmp/host-app/resources/app/src && touch /tmp/host-app/resources/app/src/plugin-loader.js
+          node tools/install.mjs --app /tmp/host-app --components --patch patch --dry-run
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [gates, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save eslint@9
+      - name: 构建（strict）
+        run: node tools/build-release.mjs --strict --version ${GITHUB_REF_NAME#v}
+      - name: 上传 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/*.sha256
+            dist/release.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true

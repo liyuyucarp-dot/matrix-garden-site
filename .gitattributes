@@ -1,0 +1,17 @@
+# 统一换行，避免 Windows/macOS 协作时整文件 diff
+* text=auto eol=lf
+
+# 明确的二进制（禁止任何换行转换）
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.webp binary
+*.ico  binary
+*.zip  binary
+
+# 脚本在 Windows 上仍可运行（Node 读文件不受影响）
+*.mjs text eol=lf
+*.js  text eol=lf
+*.json text eol=lf
+*.ps1 text eol=crlf
+*.yml text eol=lf

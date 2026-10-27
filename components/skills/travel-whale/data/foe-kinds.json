@@ -1,0 +1,21 @@
+{
+  "note": "敌手类型表：键 = `<regionId>|<组名>`（与 regions.json 的 countries[].name 一致）。**只登记「机械型」**；未登记的组一律按常规（生物/人类）处理。",
+  "why": "机械型敌手（机动战士/发条机关这类）不能按生物的打法叙述：模型会写『朝扎古扔石头』『跟扎古谈条件』。她对这些东西的正确玩法是**黑入它们的系统**（用户 2026-10-12 定：只限确实是机器的敌手）。sleep-mood 的状态池据此把战斗条目分成两套。",
+  "kinds": {
+    "gundam|地球联邦": "machine",
+    "gundam|月面都市": "machine",
+    "gundam|宇宙殖民地": "machine",
+    "gundam|宇宙要塞": "machine",
+    "teyvat|枫丹": "machine",
+    "arknights|维多利亚": "machine",
+    "nightcity|圣多明戈": "machine"
+  },
+  "candidates_not_marked": {
+    "starcraft|泰伦帝国": "陆战队员是人（穿动力甲），不是机械",
+    "starcraft|尤摩扬护国军": "帝国特工是人",
+    "starcraft|神族家园": "虫群是生物",
+    "starcraft|虫群领域": "虫群是生物",
+    "starcraft|边境星域": "异形生物",
+    "warhammer40k|*": "该地区敌手全是生物/人形（兽人、虫族、恶魔、战士、巨狼、幽灵）"
+  }
+}

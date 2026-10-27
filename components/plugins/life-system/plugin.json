@@ -1,0 +1,101 @@
+{
+  "id": "life-system",
+  "name": "世界与事件",
+  "version": "0.7.0",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "世界设定 + 日历 + 规范化事件。固定时段和随机事件都以指令列表管理，复杂原文先整理成短状态后才注入。",
+  "author": "QQ Agent",
+  "enabledByDefault": false,
+  "capabilities": [
+    "life.today",
+    "life.calendar-file",
+    "life.worldbook",
+    "life.schedule-health",
+    "life.active-scheduled-event",
+    "life.context-events",
+    "life.facts",
+    "life.roll",
+    "life.clear",
+    "state.energy-targets"
+  ],
+  "requires": [],
+  "settings": {
+    "worldbook": "",
+    "staticWorldOnly": false,
+    "calendarEnabled": true,
+    "energyFromWorld": true,
+    "eventPoolEnabled": false,
+    "eventPool": "",
+    "eventPoolItems": "[]",
+    "eventsPerDay": 4,
+    "eventGapMin": 60,
+    "eventRepeatH": 72,
+    "scheduledEvents": ""
+  },
+  "configSchema": {
+    "worldbook": {
+      "type": "textarea",
+      "label": "世界设定（不是人设）",
+      "description": "只写世界：城市、天气、行规、会发生什么。她是谁写在「设置 → 人设」。"
+    },
+    "staticWorldOnly": {
+      "type": "boolean",
+      "label": "只接受静态世界（拒绝旅行状态）",
+      "description": "开启后：如果「世界设定」看着像**别处同步来的旅行状态**（含「此刻人在…」「（背景速写」这类签名），就跳过注入并记一条日志。给没有 travel-whale 的宿主用 —— 防止整份配置被拷过来时，把别人家的行程当成自己的世界。"
+    },
+    "eventPoolEnabled": {
+      "type": "boolean",
+      "label": "启用事件池",
+      "description": "关 = 只靠正则把她自己说的话记进账本（吃饭/在忙/困了等）。开 = 还会从事件池按节奏随机抽。"
+    },
+    "eventPool": {
+      "type": "textarea",
+      "label": "旧版事件池（兼容）",
+      "description": "旧版文本格式，仅用于自动迁移；新事件请在设置页按指令添加。"
+    },
+    "eventPoolItems": {
+      "type": "textarea",
+      "label": "规范化随机事件（由设置页管理）",
+      "description": "结构化事件列表。复杂内容需确认状态摘要后才会参与抽取。"
+    },
+    "eventsPerDay": {
+      "type": "number",
+      "label": "每天最多抽几条",
+      "description": "事件池开启时有效。默认 4。"
+    },
+    "eventGapMin": {
+      "type": "number",
+      "label": "两条事件最小间隔（分钟）",
+      "description": "事件池开启时有效。默认 60。"
+    },
+    "eventRepeatH": {
+      "type": "number",
+      "label": "同一条素材多少小时不重复",
+      "description": "事件池开启时有效。默认 72。"
+    },
+    "scheduledEvents": {
+      "type": "textarea",
+      "label": "固定时段事件（JSON）",
+      "description": "时间事件列表：type=weekly（days/start/end）、type=preset（startAt/endAt）或 type=chain（startAt/nodes，最多 5 个节点）。时间事件生效或倒计时期间暂停随机抽取；最后节点结束后自动收回提示。"
+    },
+    "calendarEnabled": {
+      "type": "boolean",
+      "label": "按日历感知节假日/调休",
+      "description": "使用插件自带的节假日表；旧版安装会回退到 data/life-calendar.json。只有节假日、调休、假期前后会补一行。"
+    },
+    "energyFromWorld": {
+      "type": "boolean",
+      "label": "世界/账本修正精力目标",
+      "description": "开启后：周末/假期/调休会按日历轻调精力目标；账本里「没睡好/还没吃/在忙」也会小幅压精力。"
+    }
+  },
+  "settingsUi": {
+    "id": "main",
+    "label": "世界与事件",
+    "file": "settings-ui.js"
+  },
+  "prompt": {
+    "sections": []
+  }
+}

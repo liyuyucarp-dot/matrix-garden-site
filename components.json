@@ -1,0 +1,115 @@
+{
+  "packageName": "矩阵庭院-完整包",
+  "version": "2.2.9",
+  "componentCount": 16,
+  "patches": [
+    {
+      "id": "core-048",
+      "path": "patch",
+      "for": "QQ Agent 0.4.8.x"
+    },
+    {
+      "id": "adapter-04",
+      "path": "adapter-04",
+      "for": "QQ Agent 官方 0.4 preview"
+    }
+  ],
+  "components": [
+    {
+      "kind": "skills",
+      "id": "courtyard-doctor",
+      "version": "1.0.2",
+      "path": "components/skills/courtyard-doctor"
+    },
+    {
+      "kind": "skills",
+      "id": "courtyard-map",
+      "version": "1.1.1",
+      "path": "components/skills/courtyard-map"
+    },
+    {
+      "kind": "skills",
+      "id": "qqzone",
+      "version": "2.4.0",
+      "path": "components/skills/qqzone"
+    },
+    {
+      "kind": "skills",
+      "id": "qzone",
+      "version": "1.5.1",
+      "path": "components/skills/qzone"
+    },
+    {
+      "kind": "skills",
+      "id": "travel-whale",
+      "version": "4.4.6",
+      "path": "components/skills/travel-whale"
+    },
+    {
+      "kind": "plugins",
+      "id": "autobiography",
+      "version": "0.2.3",
+      "path": "components/plugins/autobiography"
+    },
+    {
+      "kind": "plugins",
+      "id": "bili-whale",
+      "version": "1.4.4",
+      "path": "components/plugins/bili-whale"
+    },
+    {
+      "kind": "plugins",
+      "id": "courtyard-bus",
+      "version": "0.1.0",
+      "path": "components/plugins/courtyard-bus"
+    },
+    {
+      "kind": "plugins",
+      "id": "favor-core",
+      "version": "1.1.1",
+      "path": "components/plugins/favor-core"
+    },
+    {
+      "kind": "plugins",
+      "id": "knowledge-base",
+      "version": "1.1.1",
+      "path": "components/plugins/knowledge-base"
+    },
+    {
+      "kind": "plugins",
+      "id": "learning-loop",
+      "version": "1.3.3",
+      "path": "components/plugins/learning-loop"
+    },
+    {
+      "kind": "plugins",
+      "id": "life-system",
+      "version": "0.7.0",
+      "path": "components/plugins/life-system"
+    },
+    {
+      "kind": "plugins",
+      "id": "mind-wish",
+      "version": "1.0.0",
+      "path": "components/plugins/mind-wish"
+    },
+    {
+      "kind": "plugins",
+      "id": "silence-ping",
+      "version": "1.6.0",
+      "path": "components/plugins/silence-ping"
+    },
+    {
+      "kind": "plugins",
+      "id": "sleep-mood",
+      "version": "2.0.3",
+      "path": "components/plugins/sleep-mood"
+    },
+    {
+      "kind": "plugins",
+      "id": "think-gate",
+      "version": "1.1.0",
+      "path": "components/plugins/think-gate"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "autobiography",
+  "name": "自传体记忆",
+  "version": "0.2.3",
+  "apiVersion": 1,
+  "category": "utility",
+  "description": "L3 长期记忆（睡前触发版）：在她入睡时把旅行/B站/心情/好感的一天流水提炼成一句她自己的回忆，直接沉淀进 knowledge-base（可检索、可修改）。触发条件＝命令睡眠（随时）或夜间的自然睡眠（默认 21:00–06:00），午后小憩不算。不再注入提示词、不按固定钟点跑、空素材不落节点。只读其它组件数据，凭据不入库。",
+  "author": "local",
+  "enabledByDefault": true,
+  "capabilities": [],
+  "requires": [],
+  "settings": {
+    "enabled": true,
+    "llmWrite": true,
+    "checkSeconds": 60,
+    "kbTitle": "她的回忆",
+    "nightStartHour": 21,
+    "nightEndHour": 6
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "label": "启用自传体记忆",
+      "description": "她在入睡时沉淀当天的回忆；关闭后不再产生新回忆，已沉淀的内容仍在知识库里。"
+    },
+    "llmWrite": {
+      "type": "boolean",
+      "label": "用模型提炼回忆",
+      "description": "开=用模型把流水写成一句她自己的回忆；关=模板兜底（省 token）。失败自动走模板。"
+    },
+    "checkSeconds": {
+      "type": "number",
+      "label": "观察睡眠状态的间隔（秒）",
+      "description": "每隔这么久看一次她是否已入睡；睡着且今天还没总结就总结一次。默认 60，范围 20~300。",
+      "min": 20,
+      "max": 300
+    },
+    "nightStartHour": {
+      "type": "number",
+      "label": "夜间起点（小时）",
+      "description": "自然睡眠只有落在这个时段内才算「睡前」。默认 21（21:00 起）。命令睡眠不受此限制。",
+      "min": 0,
+      "max": 23
+    },
+    "nightEndHour": {
+      "type": "number",
+      "label": "夜间终点（小时）",
+      "description": "夜间时段到几点为止（不含）。默认 6（到 06:00）。跨零点会自动按 21:00–06:00 处理。",
+      "min": 0,
+      "max": 23
+    },
+    "kbTitle": {
+      "type": "string",
+      "label": "知识库里的标题",
+      "description": "回忆写进 knowledge-base/learned/ 下的这个名字（默认「她的回忆」）。改名后会写进新的文件。"
+    }
+  },
+  "prompt": null
+}

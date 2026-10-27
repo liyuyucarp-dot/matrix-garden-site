@@ -1,0 +1,1 @@
+      ${pluginPanelButtons(skill)}

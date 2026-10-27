@@ -1,0 +1,49 @@
+{
+  "id": "think-gate",
+  "name": "思考分级",
+  "version": "1.1.0",
+  "apiVersion": 1,
+  "category": "model",
+  "description": "短句、纯反应、没提问没任务的消息免掉思考。省 reasoning token、降低首字延迟，并减少 DeepSeek 思考模式下 reasoning_content 回传导致的 400。",
+  "author": "QQ Agent",
+  "enabledByDefault": true,
+  "permissions": [],
+  "capabilities": [
+    "llm.request-params"
+  ],
+  "requires": [],
+  "settings": {
+    "enabled": true,
+    "maxChars": 24,
+    "extraKeepWords": "",
+    "verbose": false
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "bool",
+      "label": "启用思考分级",
+      "default": true,
+      "help": "关掉 = 每条消息都照常思考（与插件装之前完全一致）。"
+    },
+    "maxChars": {
+      "type": "number",
+      "label": "多长以上必须思考（字）",
+      "default": 24,
+      "min": 4,
+      "max": 200,
+      "help": "超过这个字数的消息一律照常思考。默认 24。"
+    },
+    "extraKeepWords": {
+      "type": "string",
+      "label": "额外「必须思考」的词",
+      "default": "",
+      "help": "逗号或空格分隔。命中任一就照常思考，用来补判据表没覆盖的说法。"
+    },
+    "verbose": {
+      "type": "bool",
+      "label": "记录每次判定",
+      "default": false,
+      "help": "打开后每次请求打一行日志（免思考 / 照常思考 + 理由），排障用。"
+    }
+  }
+}

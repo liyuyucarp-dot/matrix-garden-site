@@ -1,0 +1,188 @@
+{
+ "name": "矩阵庭院 · 官方 0.4 适配补丁",
+ "version": "1.1.2",
+ "builtAt": "2026-10-26",
+ "note": "v1.1.2：补 api.storage（0.4 的 createSkillApi 没有它 ⇒ 插件写的快照无处落地、面板 @data 一直 404）。v1.1.1：仅修 README。v1.1.0：插件自带界面（panel 路由 + settingsUi + 前端入口）。",
+ "target": "<QQ Agent 0.4 源码根目录>/",
+ "apply": "apply-core-patch.ps1",
+ "needsRestart": true,
+ "entries": [
+  {
+   "path": "src/half-life.js",
+   "kind": "copy-new",
+   "requiredBy": "plugins/life-system（静态 import，缺了整块加载失败）",
+   "ifMissing": "life-system 起不来：ERR_MODULE_NOT_FOUND"
+  },
+  {
+   "path": "src/memory-people.js",
+   "kind": "copy-new",
+   "requiredBy": "plugins/favor-core/lib/ledger.js（好感度内核）",
+   "ifMissing": "favor-core 起不来：ERR_MODULE_NOT_FOUND"
+  },
+  {
+   "path": "src/memory-audit.js",
+   "kind": "copy-new",
+   "requiredBy": "plugins/favor-core/lib/audit.js",
+   "ifMissing": "同上，与 memory-people 成对"
+  },
+  {
+   "path": "src/skills/panel.js",
+   "kind": "copy-new",
+   "note": "v1.1.0：插件自带界面的完整契约（路径校验 / URL 拼装 / CSP / 扩展名白名单），从 0.4.8.x 原样搬来，零改动",
+   "requiredBy": "manifest.js、app.js、前端三处都 import 它",
+   "ifMissing": "面板路由与 manifest 校验都起不来（import 失败）"
+  },
+  {
+   "path": "src/skills/manager.js",
+   "kind": "anchor-insert",
+   "anchor": "register(skill) {",
+   "insertFile": "snippets/manager-services.insert.js",
+   "marker": "setServices",
+   "insertAfterAnchor": false,
+   "requiredBy": "所有要发消息后台任务（travel-whale / qzone / qqzone）"
+  },
+  {
+   "path": "src/skills/manager.js",
+   "kind": "anchor-insert",
+   "anchor": "      configSchema: (m.configSchema && typeof m.configSchema === 'object') ? m.configSchema : {},",
+   "insertFile": "snippets/manager-panel-status.insert.js",
+   "marker": "settingsUi: m.settingsUi",
+   "insertAfterAnchor": true,
+   "note": "v1.1.0：list()/status() 是显式白名单，不在这里放行 panels/settingsUi，前端永远拿不到",
+   "requiredBy": "设置弹窗里的「插件自带界面」按钮"
+  },
+  {
+   "path": "src/plugin-loader.js",
+   "kind": "anchor-insert",
+   "anchor": "config: () => skillManager.settingsOf(skillId),",
+   "insertFile": "snippets/loader-services.insert.js",
+   "marker": "onServices",
+   "insertAfterAnchor": true,
+   "requiredBy": "同上（服务 + api.onebot）"
+  },
+  {
+   "path": "src/plugin-loader.js",
+   "kind": "anchor-insert",
+   "anchor": "import { skillErrorText } from './skills/errors.js';",
+   "insertFile": "snippets/loader-storage-import.insert.js",
+   "marker": "import { DATA_DIR } from './config.js';",
+   "insertAfterAnchor": true,
+   "requiredBy": "api.storage（快照/计数器落盘）",
+   "ifMissing": "makeSkillStorage 找不到 DATA_DIR → 整块 ReferenceError"
+  },
+  {
+   "path": "src/plugin-loader.js",
+   "kind": "anchor-insert",
+   "anchor": "function createSkillApi(skillId, permissions = []) {",
+   "insertFile": "snippets/loader-storage.insert.js",
+   "marker": "function makeSkillStorage(skillId)",
+   "insertAfterAnchor": false,
+   "requiredBy": "courtyard-map 的 publishNow 写快照；任何用 api.storage 的插件",
+   "ifMissing": "api.storage 不存在 → 面板 @data/storage.json 404、面板空白"
+  },
+  {
+   "path": "src/plugin-loader.js",
+   "kind": "anchor-insert",
+   "anchor": "config: () => skillManager.settingsOf(skillId),",
+   "insertFile": "snippets/loader-storage-member.insert.js",
+   "marker": "storage: makeSkillStorage(skillId),",
+   "insertAfterAnchor": true,
+   "requiredBy": "同上",
+   "ifMissing": "同上"
+  },
+  {
+   "path": "src/app.js",
+   "kind": "anchor-insert",
+   "anchor": "const orchestrator = new Orchestrator(",
+   "insertFile": "snippets/app-services.insert.js",
+   "marker": "travel-whale:services",
+   "insertAfterAnchor": true,
+   "requiredBy": "同上；唯一能让技能拿到 sender 的地方"
+  },
+  {
+   "path": "src/app.js",
+   "kind": "anchor-insert",
+   "anchor": "import { createRoutes } from './routes.js';",
+   "insertFile": "snippets/app-panel-import.insert.js",
+   "marker": "panelCsp",
+   "insertAfterAnchor": true,
+   "note": "v1.1.0：面板路由要用 panel.js 的常量与 CSP",
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "src/app.js",
+   "kind": "anchor-insert",
+   "anchor": "      const fullPath = path.join(UI_DIR, ...clean);",
+   "insertFile": "snippets/app-panel-routes.insert.js",
+   "marker": "panelRoot",
+   "insertAfterAnchor": false,
+   "note": "v1.1.0：/plugin-panel/<id>/… 与 /plugin-assets/<id>/… 两条只读静态路由",
+   "requiredBy": "插件自带界面（iframe 面板 + settingsUi 模块）"
+  },
+  {
+   "path": "src/skills/manifest.js",
+   "kind": "anchor-insert",
+   "anchor": "const VALID_CATEGORIES = new Set(['model', 'message', 'knowledge', 'media', 'utility']);",
+   "insertFile": "snippets/manifest-panel-import.insert.js",
+   "marker": "collectPanels",
+   "insertAfterAnchor": true,
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "src/skills/manifest.js",
+   "kind": "anchor-insert",
+   "anchor": "  const requiresClean = requires.filter((r) => !capabilities.includes(r));",
+   "insertFile": "snippets/manifest-panel-compute.insert.js",
+   "marker": "panelProblems",
+   "insertAfterAnchor": true,
+   "note": "从 configSchema 摘出 type:'action' 的条目，单独校验",
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "src/skills/manifest.js",
+   "kind": "replace-block",
+   "from": [
+    "configSchema: (raw.configSchema && typeof raw.configSchema === 'object') ? raw.configSchema : {},"
+   ],
+   "to": [
+    "      configSchema: stripPanelActions(rawSchema),",
+    "      // [[courtyard:panel]] 设置弹窗里「界面」入口的数据源（后端已校验 + 拼好 URL）",
+    "      panels,",
+    "      // 插件自带设置页模块：前端 import('/plugin-assets/<id>/<file>') 后调 render/bind",
+    "      settingsUi: normalizeSettingsUi(raw.settingsUi, id),"
+   ],
+   "marker": "stripPanelActions(rawSchema)",
+   "note": "白名单里补 panels / settingsUi：normalizeManifest 不列的字段一律丢弃",
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "src/skills/manifest.js",
+   "kind": "anchor-insert",
+   "anchor": "/** 提示词片段声明：一律带 priority，且强制低于核心安全规则（100）。 */",
+   "insertFile": "snippets/manifest-settingsui-helper.insert.js",
+   "marker": "function normalizeSettingsUi",
+   "insertAfterAnchor": false,
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "ui/app/06-settings-render.js",
+   "kind": "anchor-insert",
+   "anchor": "function renderSkillSettingsModal(skill) {",
+   "insertFile": "snippets/ui-panel-buttons.insert.js",
+   "marker": "pluginPanelButtons",
+   "insertAfterAnchor": false,
+   "note": "v1.1.0：自带 overlay 的前端入口（iframe 面板 + settingsUi 模块），不依赖控制台原有弹层",
+   "requiredBy": "插件自带界面"
+  },
+  {
+   "path": "ui/app/06-settings-render.js",
+   "kind": "anchor-insert",
+   "anchor": "      <div class=\"skill-form\">${keys.map(fieldHtml).join('')}</div>",
+   "insertFile": "snippets/ui-panel-slot.insert.js",
+   "marker": "${pluginPanelButtons(skill)}",
+   "insertAfterAnchor": true,
+   "note": "把按钮插进设置弹窗的表单下方",
+   "requiredBy": "插件自带界面"
+  }
+ ]
+}

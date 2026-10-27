@@ -1,0 +1,189 @@
+{
+  "note": "通用事件表。一趟**可以出多个**事件：每张途中卡独立掷一次，单卡概率 = eventTripP / 途中卡数（默认 eventTripP=0.28，约 foe 0.55 的一半）。字段：where(any/fiction/real)、phase(可选，只在该相位出现)、line(一句话局势)、fusion(2 条构图，{who} 占位)、mood(good/bad)、effect(none/bonus-souvenir/lose-souvenir)、places(可选，属地词表 settlement/wild/corridor/void；不写=任何地方都能抽)。",
+  "version": 2,
+  "createdAt": "2026-10-18",
+  "eventTripP": 0.28,
+  "events": [
+    {
+      "id": "sandstorm",
+      "kind": "weather",
+      "name": "沙暴",
+      "where": "any",
+      "places": ["wild", "settlement"],
+      "line": "沙子从午后开始往脸上打，能见度一路掉到十几米，只能贴着墙根走",
+      "fusion": [
+        "{who}用袖子挡着脸，在沙里低头往前挪，身后的脚印很快被埋掉",
+        "沙墙一样压过来，{who}缩在背风的角落里等它过去"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "road-cut",
+      "kind": "weather",
+      "name": "封路绕行",
+      "where": "any",
+      "places": ["wild", "settlement", "corridor"],
+      "line": "前面的路被塌方和水堵死，绕了一大圈才摸回原路",
+      "fusion": [
+        "{who}站在断掉的路面前张望，脚边是一整片滑下来的碎石"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "festival",
+      "kind": "festival",
+      "name": "赶上节庆",
+      "where": "any",
+      "places": ["settlement"],
+      "line": "正好撞上当地的节庆，街上挂满灯，摊子一直摆到路口",
+      "fusion": [
+        "{who}从挂满灯的街心穿过去，手里多了一支刚买的吃食",
+        "{who}站在人堆边上，看游行从面前慢慢过去"
+      ],
+      "mood": "good",
+      "effect": { "type": "bonus-souvenir" }
+    },
+    {
+      "id": "lost-luggage",
+      "kind": "mishap",
+      "name": "行李被顺走",
+      "where": "any",
+      "places": ["settlement"],
+      "line": "人挤人的时候背包被人拉开，回到住的地方才发现少了一样东西",
+      "fusion": [
+        "{who}低头翻着被拉开的背包，眉头皱起来"
+      ],
+      "mood": "bad",
+      "effect": { "type": "lose-souvenir" }
+    },
+    {
+      "id": "kind-stranger",
+      "kind": "encounter",
+      "name": "遇到好心人",
+      "where": "any",
+      "places": ["settlement"],
+      "line": "路不熟的时候，有个当地人一路把她带到地方，还塞给她一点吃的",
+      "fusion": [
+        "{who}跟着一个当地人走过巷子，手里被塞了一小包吃的"
+      ],
+      "mood": "good",
+      "effect": { "type": "bonus-souvenir" }
+    },
+    {
+      "id": "found-thrift",
+      "kind": "discovery",
+      "name": "淘到旧货",
+      "where": "any",
+      "places": ["settlement"],
+      "line": "旧货摊上翻到一样不起眼的东西，摊主挥挥手就让她拿走了",
+      "fusion": [
+        "{who}蹲在旧货摊前，手里捧着一件落灰的小东西"
+      ],
+      "mood": "good",
+      "effect": { "type": "bonus-souvenir" }
+    },
+    {
+      "id": "pilgrim-crush",
+      "kind": "crowd",
+      "name": "朝圣人潮",
+      "where": "fiction",
+      "places": ["settlement"],
+      "phase": ["朝圣季"],
+      "line": "朝圣的队伍堵死了整条台阶，人挤人往前挪，鞋都踩掉了一只",
+      "fusion": [
+        "{who}被人潮推着往前走，只能侧着身子护住怀里的东西",
+        "{who}在台阶边沿站住，脚下是望不到头的队伍"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "servitor-patrol",
+      "kind": "order",
+      "name": "机仆盘查",
+      "where": "fiction",
+      "places": ["settlement"],
+      "phase": ["宫门戒严"],
+      "line": "一队机仆在路口设卡，逐个核对身份印，队伍一动不动",
+      "fusion": [
+        "{who}站在关卡前，一个机仆的镜头正对着她的脸",
+        "{who}被拦在路障外，旁边是一排亮着红灯的机仆"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "ash-burial",
+      "kind": "weather",
+      "name": "圣灰积街",
+      "where": "fiction",
+      "places": ["settlement"],
+      "phase": ["圣灰雨"],
+      "line": "灰已经积到脚踝，走一步陷一步，远处的塔尖整个看不见了",
+      "fusion": [
+        "{who}在及踝的灰里跋涉，衣摆被灰糊成一片",
+        "{who}蹲下来把鞋里的灰倒出来，四周全是灰白"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "golden-leaves",
+      "kind": "weather",
+      "name": "金叶落雨",
+      "where": "fiction",
+      "places": ["wild"],
+      "line": "金色的叶子从看不见的高处落下来，落在肩上不化也不碎",
+      "fusion": [
+        "{who}抬手接住一片正落下来的金叶，光从叶子后面透过来",
+        "{who}站在满地金叶里抬头，树冠高得看不到顶"
+      ],
+      "mood": "good",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "rot-creep",
+      "kind": "calamity",
+      "name": "腐败蔓延",
+      "where": "fiction",
+      "places": ["wild", "settlement", "corridor"],
+      "line": "墙根渗出暗红的菌丝，走过去时脚边的草一片片塌下去",
+      "fusion": [
+        "{who}贴着墙走，避开地上那片正在蔓延的暗红",
+        "{who}站在一片枯下去的地面前，皱着眉往后退了半步"
+      ],
+      "mood": "bad",
+      "effect": { "type": "lose-souvenir" }
+    },
+    {
+      "id": "blackout",
+      "kind": "order",
+      "name": "全区停电",
+      "where": "fiction",
+      "places": ["settlement"],
+      "line": "整条街的招牌一起灭了，只剩应急灯和远处发电机的响",
+      "fusion": [
+        "{who}站在突然暗下来的街上，只有应急灯照亮她半张脸",
+        "{who}借着手机的光往前走，两边的橱窗全黑着"
+      ],
+      "mood": "bad",
+      "effect": { "type": "none" }
+    },
+    {
+      "id": "gang-firefight",
+      "kind": "danger",
+      "name": "街头火并",
+      "where": "fiction",
+      "places": ["settlement"],
+      "line": "街角突然打起来，路人都往店里躲，玻璃碎了一地",
+      "fusion": [
+        "{who}缩在卷帘门后面，看街上的火线来回扫",
+        "{who}被推着躲进店里，脚边全是碎玻璃"
+      ],
+      "mood": "bad",
+      "effect": { "type": "lose-souvenir" }
+    }
+  ]
+}
