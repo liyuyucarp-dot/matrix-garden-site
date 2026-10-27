@@ -174,13 +174,16 @@
     drawRoutes();
   }
 
-  // ── 点阵世界地图底图（现实世界带 y6..470）──
-  function drawWorldDots() {
+  // ── 点阵世界地图底图（基础世界带 y6..470；支持随 snap.mapTheme.worldLand 动态切换大陆轮廓）──
+  function drawWorldDots(snap) {
     var svg = document.getElementById('worldDots');
     if (!svg) return;
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     var frag = document.createDocumentFragment();
-    WORLD_LAND.forEach(function (rowSpec) {
+    var land = (snap && snap.mapTheme && Array.isArray(snap.mapTheme.worldLand) && snap.mapTheme.worldLand.length)
+      ? snap.mapTheme.worldLand
+      : WORLD_LAND;
+    land.forEach(function (rowSpec) {
       var r = rowSpec[0];
       for (var i = 1; i < rowSpec.length; i++) {
         var c0 = rowSpec[i][0], c1 = Math.min(rowSpec[i][1], 99);
@@ -246,7 +249,11 @@
   function renderMap(snap) {
     var canvas = document.getElementById('mapCanvas');
     [].slice.call(canvas.querySelectorAll('.zone')).forEach(function (n) { n.parentNode.removeChild(n); });
-    drawWorldDots();
+    drawWorldDots(snap);
+    var gateEl = canvas.querySelector('.mirror-gate');
+    if (gateEl) {
+      gateEl.textContent = (snap && snap.mapTheme && snap.mapTheme.gateLabel) || '◈ 水 镜 之 门 ◈';
+    }
 
     var regions = snap.regions || [];
     var world = snap.world || {};
@@ -358,9 +365,16 @@
       canvas.appendChild(zone);
     }
 
-    // 现实九区固定格（地理列 + 点阵底图对位）
-    REAL_KEYS.forEach(function (k) {
-      var z = ZONES[k];
+    // 基础世界固定格（默认地球九区；当 snap.mapTheme 生效时，动态切换为艾泽拉斯等新锚点分区）
+    var activeZones = (snap && snap.mapTheme && snap.mapTheme.zones && Object.keys(snap.mapTheme.zones).length)
+      ? snap.mapTheme.zones
+      : ZONES;
+    var activeRealKeys = (snap && snap.mapTheme && Array.isArray(snap.mapTheme.zoneOrder) && snap.mapTheme.zoneOrder.length)
+      ? snap.mapTheme.zoneOrder
+      : Object.keys(activeZones);
+    activeRealKeys.forEach(function (k) {
+      var z = activeZones[k];
+      if (!z) return;
       var r = byKey[k] || { key: k, name: z.name, type: 'real', cities: [] };
       draw(k, r, z, world[k]);
       byKey[k] = null;   // 已画
@@ -368,7 +382,7 @@
 
     // 其余全部进异世界动态底带（可见者 + 表外数据键），留 ？？？ 给未揭示的世界
     var bandKeys = Object.keys(world).filter(function (k) {
-      return world[k].kind === 'other' && world[k].visible && !REAL_KEYS[k];
+      return world[k].kind === 'other' && world[k].visible && !activeZones[k];
     });
     Object.keys(byKey).forEach(function (k) {
       if (!byKey[k]) return;
@@ -439,7 +453,8 @@
         wc.appendChild(tl);
       }
     } else {
-      wc.appendChild(el('div', 'place', '在矩阵庭院'));
+      var homeLabel = (snap && snap.mapTheme && snap.mapTheme.homePlaceLabel) || '在矩阵庭院';
+      wc.appendChild(el('div', 'place', homeLabel));
       if (w.homeAct) {
         var actLine = el('div', 'dim');
         actLine.appendChild(document.createTextNode(w.homeAct.act || ''));

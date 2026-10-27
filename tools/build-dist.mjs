@@ -36,6 +36,7 @@ const need = [
   'docs/外发包-README.md',
   'docs/更新日志-全部.md',
   'docs/组件介绍.md',
+  'docs/世界包与角色包.md',
   'LICENSE',
   'THIRD-PARTY-NOTICES.md'
 ];
@@ -57,6 +58,7 @@ add(path.join(repo, 'tools/install-user.ps1'), 'install.ps1');
 add(path.join(repo, 'docs/外发包-README.md'), 'README.md');
 add(path.join(repo, 'docs/更新日志-全部.md'), '更新日志-全部.md');
 add(path.join(repo, 'docs/组件介绍.md'), '组件介绍.md');
+add(path.join(repo, 'docs/世界包与角色包.md'), '世界包与角色包.md');
 add(path.join(repo, 'LICENSE'), 'LICENSE');
 add(path.join(repo, 'THIRD-PARTY-NOTICES.md'), 'THIRD-PARTY-NOTICES.md');
 

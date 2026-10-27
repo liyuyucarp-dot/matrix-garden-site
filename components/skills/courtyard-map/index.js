@@ -90,10 +90,21 @@ const REGION_META = {
 const REGIONS_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills', 'travel-whale', 'data', 'regions.json');
 let regionsCache = null;
 function regionsOf() {
+  try {
+    if (typeof TW_INTERNALS?.loadThemedRegions === 'function') {
+      const themed = TW_INTERNALS.loadThemedRegions();
+      if (Array.isArray(themed) && themed.length) return themed.filter((r) => r && r.id);
+    }
+  } catch { /* fallback to static file */ }
   if (regionsCache) return regionsCache;
   const j = readJson(REGIONS_FILE);
   regionsCache = (j && Array.isArray(j.regions)) ? j.regions.filter((r) => r && r.id) : [];
   return regionsCache;
+}
+function mapThemeOf() {
+  try {
+    return typeof TW_INTERNALS?.getMapTheme === 'function' ? (TW_INTERNALS.getMapTheme() || null) : null;
+  } catch { return null; }
 }
 function worldOf(st) {
   const equipUnlocked = new Set((Array.isArray(st?.whale?.equipUnlocked) ? st.whale.equipUnlocked : []).map(String));
@@ -104,11 +115,14 @@ function worldOf(st) {
   const map = {};
   for (const r of regionsOf()) {
     const id = String(r.id);
-    const unlocked = Boolean(r.defaultUnlocked) || equipUnlocked.has(id);
+    const isBase = Boolean(r.defaultUnlocked || r.baseWorld);
+    const unlocked = isBase || equipUnlocked.has(id);
+    const kind = isBase ? 'real' : 'other';
     map[id] = {
       name: String(r.name || id),
       equipment: String(r.equipment || ''),
-      kind: r.fictional ? 'other' : 'real',
+      kind,
+      type: kind,
       unlocked,
       visible: unlocked || equipBuyable.has(id) || visited.has(id)
     };
@@ -446,9 +460,11 @@ export function buildSnapshot(st, now = Date.now(), opts = {}) {
     at: Number(e?.at) || 0, act: String(e?.act || ''), detail: String(e?.detail || '').slice(0, 80), mate: String(e?.mate || '')
   }));
 
+  const mapTheme = mapThemeOf();
   return {
     v: 1, at: now, whale, companions, regions,
     ...(extras ? { vitals: readVitals(), favor: readFavorTop(now) } : {}),
+    ...(mapTheme ? { mapTheme } : {}),
     world: worldOf(st), courtyard, album, homeFeed
   };
 }
