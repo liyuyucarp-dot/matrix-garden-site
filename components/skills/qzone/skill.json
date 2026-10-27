@@ -1,10 +1,10 @@
 {
   "id": "qzone",
   "name": "QQ空间（社交 + 日记）",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "apiVersion": 1,
   "category": "utility",
-  "description": "让 AI 打理自己的 QQ 空间：发说说（可带聊天里的图）、刷好友动态、读说说评论与回复、给有意思的说说点赞评论、有人评论她自己的说说时自动知道；**并写自己的空间日记**（当天聊天 + 明信片 + 世界观整理成长文，排版成图发成带图说说，支持定点自动发）。v2.3 起社交线与日记线**合并为同一个技能**，用「社交线 / 日记线」两个开关分别控制（原 skills/qqzone 已并入，工具名由 qqzone__collect_diary/post_diary 改为 collect_diary/post_diary）。",
+  "description": "让 AI 打理自己的 QQ 空间：发说说（可带聊天里的图）、刷好友动态、读说说评论与回复、给有意思的说说点赞评论、有人评论她自己的说说时自动知道；**并写自己的空间日记**（当天聊天 + 明信片 + 世界观整理成长文，排版成图发成带图说说，支持定点自动发）。v2.4 起社交线与日记线（底层已抽成 lib/qzone-core.js）**合并为同一个技能**，用「社交线 / 日记线」两个开关分别控制（原 skills/qqzone 已并入，工具名由 qqzone__collect_diary/post_diary 改为 collect_diary/post_diary）。",
   "author": "QQ Agent",
   "entry": "index.js",
   "permissions": [],

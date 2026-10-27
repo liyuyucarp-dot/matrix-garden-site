@@ -27,6 +27,7 @@ const GATES = [
   { id: 'manifest', title: '闸1 组件清单', run: gateManifest },
   { id: 'syntax', title: '闸2 语法', probe: 'syntax.mjs' },
   { id: 'load', title: '闸3 加载探针（0.4.8.x 形状）', probe: 'load.mjs', probeArgs: ['--shape', '048'] },
+  { id: 'qzone-core', title: '闸3c qzone-core 纯函数自检', probe: 'qzone-core.mjs' },
   { id: 'load-04', title: '闸3b 加载探针（官方 0.4 preview 形状，无 storage）', probe: 'load.mjs', probeArgs: ['--shape', '04preview'] },
   { id: 'snapshot', title: '闸4 快照探针', probe: 'snapshot.mjs' },
   { id: 'secrets', title: '闸5 脱敏/隐私', probe: 'secrets.mjs' },

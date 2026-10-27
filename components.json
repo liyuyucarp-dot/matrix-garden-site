@@ -1,6 +1,6 @@
 {
   "packageName": "矩阵庭院-完整包",
-  "version": "3.0.0-dev.1",
+  "version": "3.0.0-dev.2",
   "componentCount": 16,
   "patches": [
     {
@@ -30,7 +30,7 @@
     {
       "kind": "skills",
       "id": "qzone",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "path": "components/skills/qzone",
       "note": "v2.3.0 起合并了原 qqzone（日记线）"
     },
