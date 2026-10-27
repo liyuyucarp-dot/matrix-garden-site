@@ -101,6 +101,50 @@ function regionsOf() {
   regionsCache = (j && Array.isArray(j.regions)) ? j.regions.filter((r) => r && r.id) : [];
   return regionsCache;
 }
+
+/**
+ * 旧 region key → 当前主题下的有效 key（2026-10-27：修「切世界后面板错位」）
+ *
+ * 为什么需要：主题一换，地区 id 的语义就变了，而**历史存档里存的是旧 id**：
+ *   ① 某异世界被「晋升」成基础世界后（如 `azeroth`），它自己不再是一个地区，
+ *      子区才是一级单位（`azeroth_outland` 等）—— 老存档的 `trip.region='azeroth'`
+ *      在新表里查不到 ⇒ 面板 world 里没有这个 key ⇒ 右侧写着"她现在在外域"，
+ *      地图上「外域与大漩涡」却显示"待启程"。
+ *   ② 原地球九区在非默认主题下已收束成一个异世界 `earth`（earthInCustomTheme=otherworld），
+ *      老存档的 `asia/europe/...` 同样查不到 ⇒ "主世界没收束、九大区还摊着"。
+ *
+ * 策略：能归位就归位（父世界→按城市名找子区；旧地球区→earth），归不了就返回 '' 让调用方跳过
+ * —— 宁可少画一张卡，也绝不把记录挂到不相干的地区上。
+ */
+function normalizeRegionKey(key, city) {
+  const k = String(key || '').trim();
+  if (!k) return '';
+  let table = [];
+  try { table = regionsOf(); } catch { return k; }
+  const byId = new Map(table.map((r) => [String(r.id), r]));
+  if (byId.has(k)) return k;
+  // ① 父世界被晋升：按城市名在它的子区里找
+  const kids = table.filter((r) => String(r.parentWorldId || '') === k);
+  if (kids.length) {
+    const c = String(city || '').trim();
+    if (c) {
+      const hit = kids.find((r) => (Array.isArray(r.countries) ? r.countries : [])
+        .some((co) => (Array.isArray(co?.cities) ? co.cities : [])
+          .some((x) => { const s = String(x || '').trim(); return s && (s === c || c.includes(s) || s.includes(c)); })));
+      if (hit) return String(hit.id);
+    }
+    return '';
+  }
+  // ② 原地球九区 → 收束后的 earth
+  let isDefault = true;
+  try { isDefault = typeof TW_INTERNALS?.isDefaultTheme === 'function' ? TW_INTERNALS.isDefaultTheme() : true; } catch { /* 保持默认 */ }
+  if (!isDefault && byId.has('earth')) {
+    const legacyEarth = ['asia', 'europe', 'africa', 'americas', 'oceania', 'pacific', 'atlantic', 'indian', 'arctic'];
+    if (legacyEarth.includes(k.toLowerCase())) return 'earth';
+  }
+  return '';
+}
+
 function mapThemeOf() {
   try {
     return typeof TW_INTERNALS?.getMapTheme === 'function' ? (TW_INTERNALS.getMapTheme() || null) : null;
@@ -278,7 +322,7 @@ export function buildSnapshot(st, now = Date.now(), opts = {}) {
   const whale = away
     ? {
         state: 'traveling',
-        place: { city: String(t.city || ''), country: String(t.country || ''), region: String(t.region || ''), regionName: String(t.regionName || '') },
+        place: { city: String(t.city || ''), country: String(t.country || ''), region: String(t.region || ''), regionKey: normalizeRegionKey(t.region, t.city), regionName: String(t.regionName || '') },
         // ★ 2026-10-25 现实坐标（同步零网络：读缓存/区域中心；家与异世界 = 无此字段）
         coords: coordsForSync({ country: t.country, city: t.city, regionKey: t.region }),
         phase: t.phase && t.phase.name ? { name: String(t.phase.name), brief: String(t.phase.brief || '') } : null,
@@ -383,25 +427,33 @@ export function buildSnapshot(st, now = Date.now(), opts = {}) {
     if (!v || typeof v !== 'object') continue;
     const city = String(v.city || k.split('·').slice(-1)[0] || '').trim();
     if (!city) continue;
-    cityMap[`${String(v.region || '')}|${city}`] = {
-      city, country: String(v.country || ''), region: String(v.region || 'other'),
+    // ★ 2026-10-27：历史键按当前主题归位（旧 azeroth → 子区；旧地球九区 → earth），归不了就跳过
+    const region = normalizeRegionKey(v.region, city);
+    if (!region) continue;
+    cityMap[`${region}|${city}`] = {
+      city, country: String(v.country || ''), region,
       count: Number(v.count) || 1, lastAt: Number(v.lastAt) || 0, current: false
     };
   }
   if (away && t.city) {
-    const key = `${t.region}|${t.city}`;
-    cityMap[key] = cityMap[key] || { city: String(t.city), country: String(t.country || ''), region: String(t.region || ''), count: 0, lastAt: 0, current: false };
-    cityMap[key].current = true;
+    const region = normalizeRegionKey(t.region, t.city);
+    if (region) {
+      const key = `${region}|${t.city}`;
+      cityMap[key] = cityMap[key] || { city: String(t.city), country: String(t.country || ''), region, count: 0, lastAt: 0, current: false };
+      cityMap[key].current = true;
+    }
   }
   // 旅伴自游趟的目的地也上地图：不冒充她的到访（count/lastAt 不动），
   // 只挂 sideIds（谁在那儿），面板据此画旅伴节点与角标
   for (const s of sides) {
     const st2 = s.t;
     if (!st2.city || !st2.region) continue;
-    const key = `${String(st2.region)}|${String(st2.city)}`;
+    const sideRegion = normalizeRegionKey(st2.region, st2.city);
+    if (!sideRegion) continue;
+    const key = `${sideRegion}|${String(st2.city)}`;
     const partnerIds = (Array.isArray(st2.partners) ? st2.partners : []).map(String);
     const entry = cityMap[key] || (cityMap[key] = {
-      city: String(st2.city), country: String(st2.country || ''), region: String(st2.region || ''),
+      city: String(st2.city), country: String(st2.country || ''), region: sideRegion,
       count: 0, lastAt: 0, current: false
     });
     entry.sideIds = [...new Set([...(entry.sideIds || []), ...partnerIds])];

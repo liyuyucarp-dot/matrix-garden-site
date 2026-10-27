@@ -24,7 +24,7 @@
     {
       "kind": "skills",
       "id": "courtyard-map",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "path": "components/skills/courtyard-map"
     },
     {
