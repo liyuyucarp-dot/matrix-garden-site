@@ -43,7 +43,7 @@ fs.writeFileSync(path.join(dataDir, 'config.json'), JSON.stringify(cfg, null, 2)
 
 function makeApi(id, manifest) {
   // ⚠️ 三个数组必须先初始化：日志桩自己抛错会把"组件加载失败"变成假阳性
-  const bag = { logs: [], warns: [], errors: [] };
+  const bag = { logs: [], warns: [], errors: [], tools: [] };
   const storageFile = path.join(dataDir, 'plugin-data', id, 'storage.json');
   const readAll = () => { try { return JSON.parse(fs.readFileSync(storageFile, 'utf8')); } catch { return {}; } };
   const writeAll = (o) => {
@@ -54,7 +54,11 @@ function makeApi(id, manifest) {
     id,
     manifest,
     config: () => ((manifest.settings || {})),
-    registerTool: (def) => def?.id || 'probe-tool',
+    registerTool: (def) => {
+      const tid = def?.id || 'probe-tool';
+      bag.tools.push(String(tid));
+      return tid;
+    },
     registerProvider: () => {},
     capability: () => undefined,
     hasCapability: () => false,
@@ -113,6 +117,21 @@ for (const c of ids) {
       }
       if (typeof mod.available === 'function') {
         try { rec.available = mod.available(); } catch (e) { rec.available = { ok: false, reason: String(e?.message || e) }; }
+      }
+      // ── 注册的工具是否与 manifest 声明一致 ──
+      // 只把「声明了 N 个、结果一个都没注册」判为失败 —— 这是合并/重构最容易犯的错
+      // （整段 setup 被条件挡住 / 忘了调用子模块），后果是模型永远看不到这些工具。
+      // 名字级差异（manifest 写短名、代码里带前缀）只记为提示，不拦。
+      const strip = (s) => String(s).replace(new RegExp(`^${String(c.id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}__`), '');
+      const declared = new Set(((manifest.tools) || []).map((t) => strip(t.id)));
+      const registered = new Set(api._probe.tools.map(strip));
+      rec.toolsDeclared = declared.size;
+      rec.toolsRegistered = registered.size;
+      if (declared.size > 0 && registered.size === 0) {
+        rec.setupOk = false;
+        rec.error = `manifest 声明了 ${declared.size} 个工具，但 setup 一个都没注册`;
+      } else if (declared.size && registered.size && [...declared].some((x) => !registered.has(x))) {
+        rec.toolNote = `工具名有差异（不拦）：声明 ${[...declared].join(',')} / 实际 ${[...registered].join(',')}`;
       }
     } else {
       rec.setupOk = true;   // 没有 setup 的组件（纯工具型）也算通过

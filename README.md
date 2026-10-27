@@ -1,6 +1,6 @@
 # 矩阵庭院（matrix-garden-site）
 
-QQ Agent 的「她自己的生活」整合包：**16 个组件**（5 技能 + 11 插件）+ **两套宿主补丁** + **一条可复现的构建流水线**。
+QQ Agent 的「她自己的生活」整合包：**15 个组件**（4 技能 + 11 插件）+ **两套宿主补丁** + **一条可复现的构建流水线**。
 
 - 站点/下载入口：本仓库 GitHub Pages（`index.html`）
 - 发布产物：本仓库 **Releases**（由 CI 自动产出，附 `SHA256SUMS`）
@@ -12,7 +12,7 @@ QQ Agent 的「她自己的生活」整合包：**16 个组件**（5 技能 + 11
 
 ```
 components/
-  skills/          courtyard-doctor · courtyard-map · qqzone · qzone · travel-whale
+  skills/          courtyard-doctor · courtyard-map · qzone（v2.3.0 起合并了原 qqzone）· travel-whale
   plugins/         autobiography · bili-whale · courtyard-bus · favor-core · knowledge-base
                    learning-loop · life-system · mind-wish · silence-ping · sleep-mood · think-gate
 patch/             核心补丁（QQ Agent 0.4.8.x，11 项）

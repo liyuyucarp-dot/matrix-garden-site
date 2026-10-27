@@ -1,3 +1,7 @@
+// components/skills/qzone/lib/diary.js
+// 由原 skills/qqzone/index.js 迁入（2026-10-27 合并第一步）。
+// 本轮只做「合并成一个技能」，底层重复（Cookie/OneBot/布局探测）暂留两份，
+// 去重放到下一步（那时 core 就在同一个技能里，不再有跨技能依赖问题）。
 // QQ 空间动态 —— **自包含** Skill（QQ Agent 0.3.1 规范）
 //
 // 这个文件会被**原样拷进别人的 app 目录**，那份 app 的 src/ 结构与我们的不同，
@@ -54,7 +58,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))   // …/skills/qqzone
+const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')   // lib/ 的上一层 = 技能根   // …/skills/qqzone
 const SKILL_ID = 'qqzone'
 const TOOL = (n) => `${SKILL_ID}__${n}`
 
@@ -2114,7 +2118,7 @@ export function diagnose() {
   ].join('\n')
 }
 
-export function dispose() {
+export function disposeDiary() {
   cookieCache = null
   onebotRef = null
   // ★ 卸载/重载时必须熄火 —— 否则就是 §56 那种"起了没人熄"的幽灵定时器。
@@ -2383,7 +2387,7 @@ async function runAutoDiary(cfg, ac) {
   else log?.(`[qqzone] 自动日记已发布（${text.length} 字，配图 ${pics.length} 张）`);
 }
 
-export function activate() {
+export function activateDiary() {
   startAutoDiary();
   // ★★ 2026-10-14：热载/重启后**立刻**把已攒下的回忆接进长期记忆库
   //   （否则要等下一次"有新素材"触发重筛，用户会以为没生效）。
@@ -2393,9 +2397,9 @@ export function activate() {
     .then((r) => { if (r && r.written) log?.(`[qqzone] 长期记忆补写：${r.written}/${r.total} 条（近 ${r.days} 天）`); })
     .catch(() => { /* 内部已兜底 */ });
 }
-export function deactivate() { stopAutoDiary(); }
+export function deactivateDiary() { stopAutoDiary(); }
 
-export function setup(api) {
+export function setupDiary(api) {
   cfgOf = () => (api.config && typeof api.config === 'function' ? (api.config() || {}) : {})
   // ★★ 2026-10-14：日志优先走**核心 logger**（会写进 data/logs/*.log）。
   //   以前一律走 `api.log` ⇒ **技能的日志不进日志文件**（本项目已知口径）⇒
@@ -2416,7 +2420,7 @@ export function setup(api) {
   hostApi = api || null
 
   api.registerTool({
-    id: 'qqzone__collect_diary',
+    id: 'collect_diary',
     name: '收集日记素材',
     description: '收集写日记要用的素材（只读，不出网）：今天的全部聊天记录、当天寄回来的明信片清单（里面有编号，可以用来挑日记配图），加上「世界与事件」插件的世界观与近况账本（没装这个插件就只给聊天记录，并注明跳过）。返回的是原料摘要，日记正文由你自己写。',
     category: 'utility',
@@ -2428,7 +2432,7 @@ export function setup(api) {
   })
 
   api.registerTool({
-    id: 'qqzone__post_diary',
+    id: 'post_diary',
     name: '发日记说说',
     description: '把日记正文用「长文排版图」的管线排成图片，发成一条带图的 QQ 空间说说（一天一篇，工具会按天限频）。**日记是长文（1500~2000 字、8~12 段），不是群聊短句**——群里「1~10 字／不要小作文」那套不适用于日记。可以再用 pics 附上今天旅途中寄回来的明信片当配图。日记图也会发到当前会话。没装排版图技能或渲染失败时，会自动把日记发成纯文字说说（明信片配图仍会带上），不用改道。',
     category: 'utility',
