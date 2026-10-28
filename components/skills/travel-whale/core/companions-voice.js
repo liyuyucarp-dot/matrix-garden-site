@@ -9,7 +9,7 @@ import * as E from '../engine.js';
 import { cfg, log } from './runtime-deps.js';
 import { COMPANION_SKILLS, companionSkillOwned, ownedCompanionIds } from './skills-appointments.js';
 import { SELF_DIR, placeLabel } from './world-sync.js';
-import { say } from './broadcast.js';
+import { sayP } from './broadcast.js';
 
 /**
  * ★ 读当前会话的旅行伙伴（**兼容包装**，2026-10-11）。
@@ -311,7 +311,7 @@ export async function commentOnPostcard(chatKey, state, tripLike, entry, card, o
   const said = await speakAs(id, buildCommentScene(state, tripLike, entry, card, opts));
   if (!said) return '';                            // 模型失败/空串 ⇒ 这一张就不评（不回落成转述）
   const line = `${companionEmoji(def)} 「${def.name}」：${said}`;
-  await say(chatKey, line, opts);
+  await sayP(chatKey, line, opts);
   log(`[travel-whale] ${chatKey} 明信片评论（留守）：「${def.name}」`);
   return line;
 }

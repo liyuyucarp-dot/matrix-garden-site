@@ -20,7 +20,7 @@ import {
   pickCrossOverTarget,
   unlockBuyablesFromCrossing
 } from './departure.js';
-import { say, sayImage } from './broadcast.js';
+import { sayP, sayImageP } from './broadcast.js';
 import {
   markAreaSeen,
   markCardDelivered,
@@ -73,8 +73,8 @@ export async function shootHomeGroup(chatKey, state, deps) {
   }
 
   let imgSent = false;
-  if (imagePath) imgSent = await sayImage(chatKey, imagePath);
-  await say(chatKey, caption + '\n' + thought);
+  if (imagePath) imgSent = await sayImageP(chatKey, imagePath);
+  await sayP(chatKey, caption + '\n' + thought);
 
   const added = S.addPostcard(state, {
     city: HM.HOME_NAME, country: '', region: HM.HOME_NAME, spot: '庭院大合照',
@@ -339,7 +339,7 @@ export async function settleSideTrip(chatKey, state, party, deps) {
     try { await sendReturnCard(chatKey, state, snapshot, d); }
     catch (error) { log('[travel-whale] 伙伴到家明信片失败：' + (error?.message ?? error)); }
     // ★ 2026-10-21：归家播报 ＝ journey（这趟是"两位伙伴自己出去"，播报仍属"归家"）
-    for (const line of lines) await say(chatKey, line, { kind: 'journey' });
+    for (const line of lines) await sayP(chatKey, line, { kind: 'journey' });
     // ★ 2026-10-26：伙伴那趟的稀有特产图同样当场发（此前只存图鉴、从不展示）
     await sendSouvenirImages(chatKey, souvenirImages, 'journey');
     state.sideNextAt = E.nextDepartAt(now, Math.random, restRange());

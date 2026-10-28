@@ -141,6 +141,28 @@ if (!exists(path.join(dir, 'store.js'))) {
     ok(fs.readdirSync(t2).filter((x) => x.endsWith('.tmp')).length === 0, 'store.text-atomic', 'writeText 残留 tmp');
     fs.rmSync(t2, { recursive: true, force: true });
   }
+
+  // ⑨ P6 契约：travel-whale 的后台播报必须走"限流版"入口（sayP / sayImageP）
+  {
+    const bc = path.join(repo, 'components', 'skills', 'travel-whale', 'core', 'broadcast.js');
+    if (!exists(bc)) {
+      problems.push({ check: 'p6.broadcast', detail: '缺 core/broadcast.js' });
+    } else {
+      const src = fs.readFileSync(bc, 'utf8');
+      ok(/export async function sayP\b/.test(src), 'p6.sayP', '缺 sayP —— 后台播报没接限流');
+      ok(/export async function sayImageP\b/.test(src), 'p6.sayImageP', '缺 sayImageP');
+      ok(/proactiveGate\(/.test(src), 'p6.gate', 'say/sayImage 里没有 proactiveGate 调用');
+      // 后台 4 个文件不许再出现裸 say( —— 否则就有绕过限流的漏口
+      const bg = ['ticker.js', 'postcards-settle.js', 'side-trips.js', 'companions-voice.js'];
+      for (const f of bg) {
+        const p = path.join(repo, 'components', 'skills', 'travel-whale', 'core', f);
+        if (!exists(p)) continue;
+        const t = fs.readFileSync(p, 'utf8');
+        const bare = (t.match(/(?<![\w.])say\(/g) || []).length;
+        ok(bare === 0, `p6.${f}`, `${f} 里还有 ${bare} 处裸 say( —— 这条路径绕过了主动限流`);
+      }
+    }
+  }
 }
 
 const okAll = problems.length === 0;

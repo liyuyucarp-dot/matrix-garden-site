@@ -25,8 +25,7 @@ import { RT, cfg, log } from './runtime-deps.js';
 // 而工具回执走的是另一条路（replyPanel，用 ctx.sender），所以不会被误广播。
 
 /** 归一化一个会话标识：`123456789` / `群:123456789` / `group:123456789` 都收。 */
-export function normChat(raw, defKind = 'group') {
-  let s = String(raw ?? '').trim();
+export function normChat(raw, defKind = 'group') {  let s = String(raw ?? '').trim();
   if (!s) return '';
   s = s.replace(/^(群|group|g)\s*[:：]/, 'group:').replace(/^(私|好友|private|p)\s*[:：]/, 'private:');
   if (/^(group|private):/.test(s)) return s;
@@ -132,12 +131,50 @@ export function groupLabel(chatKey) {
  * ★ 2026-10-21：只有 `opts.kind === 'journey'` 才会在「家」扇出到投递名单，
  *   其余（含默认）只发 `chatKey` 本身 —— 见 `SAY_KINDS` 那段说明。
  */
+/**
+ * ★ 2026-10-28（P6）：全局主动消息限流。
+ *
+ * 拿不到 `courtyard.limit`（插件单独安装）→ **一律放行**，行为与加这层之前逐字一致。
+ * 限流器自身抛错也放行 —— 基础设施只能更克制，不能让她该说话时说不出话。
+ */
+function proactiveGate(chatKey) {
+  let rl = null;
+  try { rl = globalThis.__courtyardInfra?.limiter || null; } catch { rl = null; }
+  if (!rl || typeof rl.take !== 'function') return { ok: true, degraded: true };
+  try {
+    const r = rl.take({ chatKey: String(chatKey || 'travel-whale'), proactive: true });
+    return r && r.allowed === false
+      ? { ok: false, reason: r.reason || '主动消息额度已用完' }
+      : { ok: true };
+  } catch {
+    return { ok: true, degraded: true };
+  }
+}
+
+/** 后台自主播报（明信片 / 出发到家 / 旅伴自己说话）—— 走全局限流。工具回话请直接用 say。 */
+export async function sayP(chatKey, text, opts = {}) {
+  return say(chatKey, text, { ...opts, proactive: true });
+}
+
+/** 同上，发图版。 */
+export async function sayImageP(chatKey, file, opts = {}) {
+  return sayImage(chatKey, file, { ...opts, proactive: true });
+}
+
 export async function say(chatKey, text, opts = {}) {
   const t = String(text ?? '').trim();
   if (!t) return false;
   if (!RT.services?.sender?.sendTextBatch) {
     log('[travel-whale] 发送队列不可用，本条跳过');
     return false;
+  }
+  // ★ 2026-10-28（P6）：**自主**播报要先过全局主动限流。
+  //   为什么按 opts.proactive 区分而不是全都限：say() 同时被"工具回话"（模型响应群友）
+  //   和"后台自己说话"（明信片/出发到家播报）复用。限前者会让她该说话时闭嘴，
+  //   所以只在后台调用点（sayP 包装）打这个标记。
+  if (opts.proactive === true) {
+    const verdict = proactiveGate(chatKey);
+    if (!verdict.ok) { log(`[travel-whale] 全局限流拦住一条自主播报：${verdict.reason}`); return false; }
   }
   let any = false;
   const kind = sayKindOf(opts);
@@ -227,6 +264,11 @@ export async function sayImage(chatKey, filePath, opts = {}) {
   if (!RT.services?.sender?.sendImage) {
     log('[travel-whale] 发送队列不可用，本张图跳过');
     return false;
+  }
+  // ★ P6：自主发图同样受全局限流（见 say 里的说明）
+  if (opts.proactive === true) {
+    const verdict = proactiveGate(chatKey);
+    if (!verdict.ok) { log(`[travel-whale] 全局限流拦住一条自主播报（图）：${verdict.reason}`); return false; }
   }
   let any = false;
   const kind = sayKindOf(opts);

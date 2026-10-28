@@ -29,7 +29,7 @@ import {
   visibleRegionIds,
   visualBriefForTrip
 } from './world-sync.js';
-import { say, sayImage } from './broadcast.js';
+import { say, sayImage, sayP, sayImageP } from './broadcast.js';
 import { autoHarvest } from './autonomy.js';
 
 /**
@@ -373,12 +373,12 @@ export async function postOnce(chatKey, state, tripLike, plan, seq, total, deps,
     { allowNetwork: true }
   ).then((c) => (c ? `\n📍 ${c.lat}°N, ${c.lon}°E${c.estimated ? '（约）' : ''}` : '')).catch(() => '');
   let imgSent = false;
-  if (card.imagePath) imgSent = await sayImage(chatKey, card.imagePath, cardSayOpts);
+  if (card.imagePath) imgSent = await sayImageP(chatKey, card.imagePath, cardSayOpts);
   // 题字 + 感想合成一条；题字短、感想长，用换行分开
   // ⚔️ 前缀：让小魔王的"惹事"那张一眼可辨（与 ✨ 稀有标记同理，纯标记不改文案）
   // ★ 真实照片顶替时把署名行缀在最后（版权纪律：用真实图必带来源）
   const creditLine = card.imageCredit ? `\n${card.imageCredit}` : '';
-  await say(chatKey, (entry.rage ? '⚔️ ' : '') + (card.captionOut || card.caption) + '\n' + card.thought + creditLine + coordLine, cardSayOpts);
+  await sayP(chatKey, (entry.rage ? '⚔️ ' : '') + (card.captionOut || card.caption) + '\n' + card.thought + creditLine + coordLine, cardSayOpts);
 
   const added = S.addPostcard(state, {
     city: tripLike.city, country: tripLike.country, region: tripLike.region,
@@ -550,7 +550,7 @@ export async function sendSouvenirImages(chatKey, images, kind = 'journey') {
   for (const it of (Array.isArray(images) ? images : [])) {
     const file = String(it?.image || '');
     if (!file) continue;
-    try { await sayImage(chatKey, file, { kind }); }
+    try { await sayImageP(chatKey, file, { kind }); }
     catch (error) { log(`[travel-whale] 稀有特产图发送失败：${error?.message ?? error}`); }
   }
 }
@@ -802,11 +802,11 @@ export async function settleTrip(chatKey, state, deps) {
     try { await sendReturnCard(chatKey, state, snapshot, d); }
     catch (error) { log('[travel-whale] 到家明信片失败：' + (error?.message ?? error)); }
     // ★ 2026-10-21：归家播报 ＝ journey（扇出到投递名单）；奖励与称号 ＝ system（只发回家）
-    for (const line of lines) await say(chatKey, line, { kind: 'journey' });
+    for (const line of lines) await sayP(chatKey, line, { kind: 'journey' });
     // ★★ 2026-10-26：稀有特产图**跟归家播报一起发**。此前它只被写进 `state.souvenirs[].image`，
     //   图鉴页也不显示、没有任何工具能调它 ⇒ 生成完就"消失"（用户报的就是这个）。
     await sendSouvenirImages(chatKey, souvenirImages, 'journey');
-    for (const line of sysLines) await say(chatKey, line, { kind: 'system' });
+    for (const line of sysLines) await sayP(chatKey, line, { kind: 'system' });
     // 私聊永不自发出发，就不必排下次；群聊才排（播报时刻 + 休息区间）。
     // ★ 回家后的休息区间走 `restRange()`（默认 24~48 小时；可在技能设置里改）——
     //   这样"她在家的时间"不再是回家后的零头。两条自动出门共用 `E.nextDepartAt`。

@@ -39,7 +39,7 @@ import {
   syncWorldbook
 } from './world-sync.js';
 import { depart } from './departure.js';
-import { homeKey, notifyUI, pendingSayKind, say } from './broadcast.js';
+import { homeKey, notifyUI, pendingSayKind, sayP } from './broadcast.js';
 import { sendCard, sendReturnCard, sendSouvenirImages, settleTrip } from './postcards-settle.js';
 import {
   ackSideWishDispatched,
@@ -145,7 +145,7 @@ export async function tick() {
           //      "到家明信片"去调 `sendReturnCard`，还会顺手重排出发节奏。用自有的 kind。
           //   ★ 2026-10-21：车间下班是**系统回执** ⇒ `sayKind:'system'`（只发回家，不刷屏）。
           if (E.isNight(now)) state.pending.push({ kind: 'labelroom-off', sayKind: 'system', lines: [text] });
-          else await say(target, text, { kind: 'system' });
+          else await sayP(target, text, { kind: 'system' });
         }
       }
 
@@ -163,12 +163,12 @@ export async function tick() {
           // ★★ 2026-10-21：补发**必须沿用原来那一类** —— 半夜压下的明信片早上不能被当成
           //   system 只发回家（`pendingSayKind`：新条目读 `sayKind`，老存档按事项种类回推）。
           const pk = pendingSayKind(item);
-          for (const line of (item.lines || [])) await say(target, line, { kind: pk });
+          for (const line of (item.lines || [])) await sayP(target, line, { kind: pk });
           // ★ 2026-10-26：夜里压住的稀有特产图 —— 跟播报一起补发（老条目没有 `images` ⇒ 跳过）
           await sendSouvenirImages(target, item.images, pk);
           // 归家播报里的奖励 / 罕见特产注 / 称号解锁（`sysLines`）：老存档没有这个字段 ⇒ 跳过
           for (const line of (Array.isArray(item.sysLines) ? item.sysLines : [])) {
-            await say(target, line, { kind: 'system' });
+            await sayP(target, line, { kind: 'system' });
           }
         }
         // ★ 按 kind 分别重排"下一次"：鲸鱼那趟 → nextDepartAt；伙伴那趟 → sideNextAt。
@@ -265,7 +265,7 @@ export async function tick() {
             const comp = companionOf(state);
             // 穿越时用模型即兴演的那段替换掉固定播报（兜底台词在 buildCrossOverLine 里）
             // ★ 2026-10-21：出门播报 ＝ journey（按投递名单扇出）
-            await say(target, (r.plan.crossedOver
+            await sayP(target, (r.plan.crossedOver
               ? r.plan.crossOverLine
               : (comp
                 ? `🐋 我和${comp.name}一起出门啦 —— 这趟去 ${placeLabel(r.plan)}`
@@ -354,7 +354,7 @@ export async function tick() {
               ackSideWishDispatched(wish, rs.plan);
               const who = party.map((c) => c.name).join('和');
               // ★ 2026-10-21：伙伴自己出门**也是出门播报** ⇒ journey（按投递名单扇出）
-              await say(target, rs.plan.crossedOver
+              await sayP(target, rs.plan.crossedOver
                 ? rs.plan.crossOverLine
                 : `🐾 ${who}自己跑出去玩了 —— 这趟去 ${placeLabel(rs.plan)}`, { kind: 'journey' });
               dirty = true;
@@ -474,7 +474,7 @@ export async function tick() {
       if (!state.test) {
         const grown = farmTick(state, now);
         for (const g of grown) {
-          await say(target, `🌱 ${g.line}`, LOCAL_ONLY);
+          await sayP(target, `🌱 ${g.line}`, LOCAL_ONLY);
           dirty = true;
         }
       }
@@ -489,7 +489,7 @@ export async function tick() {
         const got = dueStipend(state, now);
         if (got > 0) {
           S.grantPlankton(state, got);
-          await say(target, `🥚 今天的免费鸡蛋到账：+${got} 亿 TOKEN`
+          await sayP(target, `🥚 今天的免费鸡蛋到账：+${got} 亿 TOKEN`
             + `（${stipendPayers(state).map((d) => d.name).join('和') || '小狐狸'}请客，余额 ${Number(state.wallet?.plankton) || 0} 亿）`);
           dirty = true;
         }
@@ -507,10 +507,10 @@ export async function tick() {
           //   顺序有讲究：自理可能动钱包（补口粮），所以花钱之前**重读一次存档**。
           await autoTend(target, state, deps, settings);
           const invited = await autoInvite(target, state, settings);
-          if (invited) await say(target, invited);
+          if (invited) await sayP(target, invited);
           const fresh = S.loadState(target);
           const said = await autoSpend(target, fresh, deps, settings);
-          if (said) await say(target, said);
+          if (said) await sayP(target, said);
         } catch (error) {
           log(`[travel-whale] 自动化出错：${error?.message ?? error}`);
         }
