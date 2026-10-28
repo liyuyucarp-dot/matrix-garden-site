@@ -32,6 +32,7 @@ const GATES = [
   { id: 'snapshot', title: '闸4 快照探针', probe: 'snapshot.mjs' },
   { id: 'theme', title: '闸4b 世界主题包自测（换主世界/任意世界晋升）', probe: 'theme.mjs' },
   { id: 'protect', title: '闸4c 安全插件自检（护心镜 / 视觉卫士）', probe: 'protect.mjs' },
+  { id: 'statebus', title: '闸4d 状态原语自检（StateStore / Heartbeat / RateLimiter）', probe: 'statebus.mjs' },
   { id: 'secrets', title: '闸5 脱敏/隐私', probe: 'secrets.mjs' },
   { id: 'panel', title: '闸6 面板契约', probe: 'panel.mjs' },
   { id: 'toolcost', title: '闸7 工具段预算（常驻 token 成本）', probe: 'toolcost.mjs' },

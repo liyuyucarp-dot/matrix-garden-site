@@ -542,7 +542,10 @@ export function buildFavorInject({
     const stored = String(m.name || '').trim();
     const liveName = String(live.get(qq) || '').trim();
     const who = (notes && notes[qq]) || liveName || (stored && stored !== qq ? stored : '') || qq;
-    const mark = `好感${favor}/100·${band}` + (pending.count > 0 ? `·待确认${pending.count}/${rules.minPending}` : '');
+    // ★ 2026-10-28 量化：注入**只给档位**（疏远/普通/熟/亲/很亲），不再带 `73/100` 这种精确值。
+    //   理由：① 精确值每变 1 点就换文本 → 尾部 token 抖动；② 模型容易把数字复述进群（"我对你 73 分"）。
+    //   需要精确值时走 memory_favor 工具（它照旧返回 `好感73/100`），prompt 里不给。
+    const mark = `好感·${band}` + (pending.count > 0 ? `·待确认${pending.count}/${rules.minPending}` : '');
     const lines = withImpressions
       ? (maxEach > 0 ? scoped.slice(-maxEach) : []).map((e) => safeTruncate(e.content || '', 40))
       : [];

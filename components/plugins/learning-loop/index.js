@@ -243,6 +243,25 @@ function ensureDir() {
   try { fs.mkdirSync(DIR, { recursive: true }); } catch { /* 权限/磁盘问题留给写时报错 */ }
 }
 
+// ── 2026-10-28（P1）：统一状态原语 ────────────────────────────────────────
+// 本组件原来有 4 处 fs.appendFileSync（**完全不原子**：崩在写一半就留半行 JSON）。
+// 现在优先走 courtyard-bus 的 StateStore（按文件排队 + write-temp-rename + 防抖），
+// 拿不到 capability 时**原样退回**同步追加 —— 组件可能被单独安装，必须能独立跑。
+let storeRef = null;
+function storeOf() {
+  if (storeRef) return storeRef;
+  try { storeRef = apiRef?.capability?.('courtyard.store') || null; } catch { storeRef = null; }
+  return storeRef;
+}
+/** 追加一行 jsonl（有 Store 就排队，没 Store 就同步追加）。返回是否受理。 */
+function appendJsonlLine(file, line) {
+  const st = storeOf();
+  if (st) {
+    try { st.append(file, line).catch(() => {}); return true; } catch { /* 落到同步路径 */ }
+  }
+  try { ensureDir(); fs.appendFileSync(file, line + '\n', 'utf8'); return true; } catch { return false; }
+}
+
 function clip(s, n) {
   const t = String(s ?? '');
   const max = Math.max(20, Math.min(2000, Number(n) || 200));
@@ -396,6 +415,21 @@ function trimIfNeeded() {
 }
 
 function appendLedger(ev) {
+  const st = storeOf();
+  if (st) {
+    const max = Math.max(200, Math.round(Number(settings().ledgerMaxLines) || DEFAULTS.ledgerMaxLines));
+    try {
+      // 追加 + 超限裁剪放在**同一个锁内**：否则并发追加时裁剪会把刚写的行裁掉
+      st.update(LEDGER, (doc) => {
+        const arr = Array.isArray(doc) ? doc : [];
+        arr.push(JSON.stringify(ev));
+        if (arr.length > max) return arr.slice(Math.floor(arr.length * 0.2));
+        return arr;
+      }).catch(() => {});
+      lineCount = lineCount < 0 ? countLines() : lineCount + 1;
+      return;
+    } catch { /* 落到同步路径 */ }
+  }
   ensureDir();
   fs.appendFileSync(LEDGER, JSON.stringify(ev) + '\n', 'utf8');
   lineCount = lineCount < 0 ? countLines() : lineCount + 1;
@@ -626,7 +660,7 @@ function appendPool(ev) {
   const keys = ensurePoolKeys();
   const k = poolKeyOf(ev);
   if (keys.has(k)) return false;
-  try { fs.appendFileSync(POOL, JSON.stringify(ev) + '\n', 'utf8'); } catch { return false; }
+  if (!appendJsonlLine(POOL, JSON.stringify(ev))) return false;
   keys.add(k);
   poolCount += 1;
   poolSig = fileSig(POOL);
@@ -653,7 +687,7 @@ function readIngested() { return readJsonl(INGESTED); }
 function rememberIngested(rec) {
   try {
     ensureDir();
-    fs.appendFileSync(INGESTED, JSON.stringify(rec) + '\n', 'utf8');
+    appendJsonlLine(INGESTED, JSON.stringify(rec));
     const all = readJsonl(INGESTED);
     if (all.length > INGESTED_KEEP) writeJsonl(INGESTED, all.slice(-INGESTED_KEEP));
   } catch { /* 记不住就下次再说 */ }
@@ -1214,7 +1248,7 @@ function noteText(args = {}) {
 // ── 宿主接线 ─────────────────────────────────────────────────────────────
 
 export function setup(api) {
-  apiRef = api;
+  apiRef = api;          // ★ 供 StateStore 能力查找（拿不到就退回同步 fs，见 appendJsonlLine）
   log = api.log || log;
   warn = api.warn || warn;
 
