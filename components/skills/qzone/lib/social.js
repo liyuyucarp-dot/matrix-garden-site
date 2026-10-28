@@ -1749,16 +1749,18 @@ export function setupSocial(api) {
     id: 'post_mood',
     name: '发说说',
     icon: '📝',
-    description: '以你自己的身份发一条 QQ 空间说说。内容要真是你想发的，一两句、你的语气。可以带图：images 里放**聊天记录里的消息号**（如 "#12345"，那条消息有多张图时用 "#12345:2" 指第 2 张），只能引用你已经看到过的图，不接受路径、网址或 base64。',
+    description: '以你自己的身份发一条 QQ 空间说说（一两句、你的语气）。'
+      + '可带图：images 填**聊天记录里的消息号**（"#12345"，多图用 "#12345:2"）；'
+      + '只认本会话里已看到的图，不接受路径/网址/base64。',
     category: 'utility',
     parameters: {
       type: 'object',
       properties: {
-        content: { type: 'string', description: '说说正文，第一人称、你自己的语气' },
+        content: { type: 'string', description: '说说正文，第一人称、你的语气。' },
         images: {
           type: 'array',
           items: { type: 'string' },
-          description: '要一起发的图，每项是聊天记录里的消息号（"#12345" 或 "#12345:2"）。不发图就别传。'
+          description: '可选，聊天记录消息号（"#12345" 或 "#12345:2"）；不发图就不传。'
         }
       },
       required: ['content']
@@ -1795,14 +1797,15 @@ export function setupSocial(api) {
     id: 'read_comments',
     name: '读说说评论',
     icon: '💭',
-    description: '读某条说说下面的**评论正文和回复**（只读）。uin/tid 从 qzone__list_feeds 的返回里原样抄；两个都不传时，读你自己最近发的那条说说。想知道别人在评论里说了什么、有没有回你，就用这个——qzone__list_feeds 只给条数，看不到内容。',
+    description: '读某条说说下的**评论正文与楼中回复**（只读）。要知道别人评论了什么就用它；list_feeds 只给条数。'
+      + 'uin/tid 从 list_feeds 原样抄；都不传则读你自己最新那条。',
     category: 'utility',
     parameters: {
       type: 'object',
       properties: {
-        uin: { type: 'string', description: '说说作者的 QQ 号（list_feeds 返回里的 uin）。不传就找你自己最新的说说。' },
-        tid: { type: 'string', description: '说说的 tid（list_feeds 返回里的 tid）。不传就找你自己最新的说说。' },
-        count: { type: 'integer', description: '最多读几条评论（默认取配置，上限 50）' }
+        uin: { type: 'string', description: '作者 QQ 号（list_feeds 返回的 uin）；不传取你自己。' },
+        tid: { type: 'string', description: '说说的 tid；不传取你自己最新那条。' },
+        count: { type: 'integer', description: '最多读几条（默认取配置，上限 50）。' }
       }
     },
     async execute(ctx, args) {
@@ -1862,19 +1865,17 @@ export function setupSocial(api) {
     id: 'reply_comment',
     name: '回复评论',
     icon: '↩️',
-    description: '回复某条说说下面**已有的某条评论**（不是发新评论）。'
-      + '先用 qzone__read_comments 看评论列表，参数 comment 填那个编号（1、2、3…）；'
-      + '想回复某层里的某条楼中回复，再填 reply（「└」那行的序号）。'
-      + 'uin/tid 照抄 qzone__read_comments / qzone__list_feeds 返回的。',
+    description: '回复某条说说下**已有的评论**（不是发新评论）。'
+      + '先用 read_comments 看列表，comment 填它的序号；回复楼中楼再填 reply（「└」行的序号）。',
     category: 'utility',
     parameters: {
       type: 'object',
       properties: {
-        uin: { type: 'string', description: '说说作者的 QQ 号' },
+        uin: { type: 'string', description: '作者 QQ 号' },
         tid: { type: 'string', description: '说说的 tid' },
         comment: { type: 'number', description: '要回复的评论序号，从 1 开始（read_comments 结果里的编号）' },
-        reply: { type: 'number', description: '可选：回复某一层里的第几条楼中回复，从 1 开始' },
-        content: { type: 'string', description: '回复内容（不要自己写 @，工具会自动带上）' }
+        reply: { type: 'number', description: '可选：楼中回复的序号，从 1 开始' },
+        content: { type: 'string', description: '回复内容（@ 由工具自动加，别自己写）' }
       },
       required: ['uin', 'tid', 'comment', 'content']
     },

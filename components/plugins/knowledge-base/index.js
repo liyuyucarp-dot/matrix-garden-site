@@ -2024,17 +2024,11 @@ function registerTools(api) {
   api.registerTool({
     id: 'knowledge-base__kb_search',
     name: '查本地知识库',
-    description: '检索你自己的本地知识库（你攒下的**外部知识**：名词、工具、概念、资料；比联网搜索可信）。'
-      + '**只用来答外部世界的问题。只要问题涉及本群、群友、你们以前聊过的事，就不在这里 —— 那要用 memory-recall__memory_search 检索长期记忆**，本地库和联网都答不了。'
-      + '什么时候用：① 问某个名词/工具/概念是什么；② 你打算联网搜之前先探一下；'
-      + '③ 以前查过、现在记不清的东西（且属外部知识）。'
-      + '每条结果带「重要度 1~5」：5 = 主人直录或多人反复确认过，可直接采信；'
-      + '1~2 = 随口一句、可能有偏差，与别处冲突时别拿它当准。'
-      + '返回的是**截断片段**，需要完整内容就用 knowledge-base__kb_read 读那一段（传 ref），不要凭片段猜后半句。'
-      + '查不到就转去联网搜（同样只限外部事实），不要编，也不要跟别人说"本地没有""我没查到"。',
-    category: 'knowledge',
-    icon: '📚',
-    defaultEnabled: true,
+        description: '检索你自己的本地知识库（你攒下的**外部知识**：名词、工具、概念、资料；比联网搜可信）。'
+      + '★ 只用于**外部世界**的问题；涉及本群/群友/以前聊过的事 → 用 memory-recall__memory_search。'
+      + '结果带「重要度 1~5」：5 可直接采信，1~2 可能有偏差、别当准。'
+      + '返回的是**截断片段**，要全文用 kb_read（传 ref），别凭片段猜后半句。'
+      + '查不到就转联网搜（同样只限外部事实），别编、也别跟人说「本地没有」。',
     parameters: {
       type: 'object',
       properties: {
@@ -2101,40 +2095,32 @@ function registerTools(api) {
   api.registerTool({
     id: 'knowledge-base__kb_remember',
     name: '记进本地知识库',
-    description: '把**有长期价值**的内容记进本地知识库，下次遇到就不用重新联网搜了 —— 这是「搜到了就存回本地」的实现。'
-      + '什么时候该记：查到了名词/概念的定义、某个事件的来龙去脉、某个工具的用法、某个群的约定规则，'
-      + '而且**以后还会再用到**。'
-      + '什么时候**不要记**（很重要）：今天天气、正在变的股价、新闻的最新进展、一次性的闲聊结论 —— '
-      + '这些记下去过几天就是错的，比不记更糟。'
-      + '**同一个主题别反复新记**：同一个话题第二次记的时候把 topic 填成同一个值、mode 用 upsert，'
-      + '它会把新内容合并进原来那一篇（不会再多一个文件）；只是补充一点内容才用 mode 缺省的 append（追加一段）。'
-      + '内容要摘成要点（别整篇搬运，超长会被拒绝），并写上来源。'
-      + '记完会立刻可检索，不需要重启。',
+    description: '把有长期价值的内容记进本地知识库，下次直接检索、不必重新联网搜。'
+      + '该记：概念定义、事件来龙去脉、工具用法、群规（以后还会用到的）。'
+      + '不该记：天气、股价、新闻进展、一次性闲聊（过几天就是错的）。'
+      + '同主题再记请复用同一 topic 且 mode=upsert；内容摘成要点、写上来源。',
     category: 'knowledge',
     icon: '📝',
     defaultEnabled: true,
     parameters: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: '这条知识的主题名（会成为文件名和小节标题），例如「XX 是什么」或「XX 群规」。' },
-        content: { type: 'string', description: '要记住的内容，摘成要点写清楚。不要整篇复制搜索结果。' },
-        source: { type: 'string', description: '来源（网址或搜索结果标题），方便事后核对。' },
-        tags: { type: 'string', description: '可选标签，逗号分隔。' },
+        title: { type: 'string', description: '主题名，会成为文件名与小节标题。' },
+        content: { type: 'string', description: '要记的内容，摘成要点，别整篇搬运。' },
+        source: { type: 'string', description: '来源（网址或结果标题），便于事后核对。' },
+        tags: { type: 'string', description: '可选，逗号分隔。' },
         topic: {
           type: 'string',
-          description: '可选，分组合并用的主题键。同一个 topic = 同一篇记录（会合并，不会新开文件）。'
-            + '不填则由 title 自动归一化得到。'
+          description: '可选。同一 topic = 同一篇（会合并）；不给则由 title 归一化。'
         },
         weight: {
           type: 'number',
-          description: '可选，重要度 1~5，默认 3。5 = 主人明确交代/反复确认过，1 = 顺带一提、可能不准。影响检索排序。'
+          description: '可选，重要度 1~5（默认 3），影响检索排序。'
         },
         mode: {
           type: 'string',
           enum: ['append', 'upsert', 'replace'],
-          description: '写入方式，默认 append（同文件名就追加一段）。'
-            + 'upsert = 按 topic 找到原条目并**替换正文**（同主题合并，推荐）；'
-            + 'replace = 整篇覆盖（条目必须已存在，保留创建时间）。'
+          description: '默认 append（追加一段）；upsert = 按 topic 合并替换正文（推荐）；replace = 整篇覆盖（须已存在）。'
         }
       },
       required: ['title', 'content']
@@ -2177,22 +2163,19 @@ function registerTools(api) {
   api.registerTool({
     id: 'knowledge-base__kb_update',
     name: '改写知识库里的一条',
-    description: '改写**已经写进**本地知识库的内容（原来只能新增、改不了，只能让人手工打开文件改）。'
-      + '什么时候用：① 发现之前记错了 / 过时了，要更正；② 想把某条的重要度调高或调低；'
-      + '③ 想给某条补上或改掉标签；④ 只改一个文件里的某一段。'
-      + 'ref 就是 knowledge-base__kb_search 结果里的「出处」（形如 资料.md#3）；'
-      + '带 #N 只改那一段，不带 #N 就整篇正文替换（标题行和「> 来源」出处块会保留）。'
-      + '文件不存在会报错（要新建请用 knowledge-base__kb_remember）。改完立刻可检索。',
+    description: '改写已写进本地知识库的内容（改错、改重要度、改标签）。'
+      + 'ref 取 kb_search 结果里的「出处」（形如 资料.md#3）；带 #N 只改该段，不带则整篇替换正文'
+      + '（标题与来源块保留）。新建请用 kb_remember。',
     category: 'knowledge',
     icon: '✏️',
     defaultEnabled: true,
     parameters: {
       type: 'object',
       properties: {
-        ref: { type: 'string', description: 'knowledge-base__kb_search 返回的「出处」，形如 资料.md#3；也可以只传文件名。' },
-        content: { type: 'string', description: '新的正文内容（会替换原来的那一段/整篇），摘成要点写清楚。' },
-        weight: { type: 'number', description: '可选，新的重要度 1~5。不传则保持原值。' },
-        tags: { type: 'string', description: '可选，新的标签（逗号分隔）。不传则保持原值。' }
+        ref: { type: 'string', description: 'kb_search 的「出处」，形如 资料.md#3；也可只传文件名。' },
+        content: { type: 'string', description: '新正文（替换该段/整篇），摘成要点。' },
+        weight: { type: 'number', description: '可选，新重要度 1~5；不传保持原值。' },
+        tags: { type: 'string', description: '可选，新标签（逗号分隔）；不传保持原值。' }
       },
       required: ['ref', 'content']
     },
@@ -2224,13 +2207,9 @@ function registerTools(api) {
   api.registerTool({
     id: 'knowledge-base__kb_status',
     name: '知识库状态与维护',
-    description: '查看本地知识库的健康状况：有几个文件、多少段、目录在哪、有没有文件被跳过或读错、'
-      + '最近查过什么，以及手动维护动作。'
-      + '什么时候用：① 有人问「你学了我放的东西没」「知识库里有什么」；'
-      + '② 查知识库总是查不到，怀疑文件没被读到（比如文件太大、编码不对、格式不支持）；'
-      + '③ 有人刚放了文件想立刻生效；④ 有人问为什么知识库是空的。'
-      + 'action 可选：status（默认，只看状态）、list（列出所有文件）、rebuild（立刻重新扫描目录，'
-      + '放完新文件想马上生效时用）。',
+    description: '查看本地知识库状态：文件数/段数/目录、被跳过的文件、最近查询，以及维护动作。'
+      + '问「你学到没」「知识库里有什么」「为什么查不到」时用。'
+      + 'action：status（默认）/ list（列文件）/ rebuild（重扫目录，刚放新文件时用）。',
     category: 'knowledge',
     icon: '🗂️',
     defaultEnabled: true,

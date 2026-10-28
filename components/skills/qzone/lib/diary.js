@@ -2148,7 +2148,8 @@ export function setupDiary(api) {
   api.registerTool({
     id: 'collect_diary',
     name: '收集日记素材',
-    description: '收集写日记要用的素材（只读，不出网）：今天的全部聊天记录、当天寄回来的明信片清单（里面有编号，可以用来挑日记配图），加上「世界与事件」插件的世界观与近况账本（没装这个插件就只给聊天记录，并注明跳过）。返回的是原料摘要，日记正文由你自己写。',
+    description: '收集写日记的素材（只读、不出网）：今天的聊天记录 + 当天寄回的明信片清单（带编号，可当配图）+'
+      + '「世界与事件」插件的世界观与近况（没装就只给聊天记录）。返回原料，正文由你自己写。',
     category: 'utility',
     parameters: { type: 'object', properties: {} },
     async execute(ctx) {
@@ -2160,18 +2161,21 @@ export function setupDiary(api) {
   api.registerTool({
     id: 'post_diary',
     name: '发日记说说',
-    description: '把日记正文用「长文排版图」的管线排成图片，发成一条带图的 QQ 空间说说（一天一篇，工具会按天限频）。**日记是长文（1500~2000 字、8~12 段），不是群聊短句**——群里「1~10 字／不要小作文」那套不适用于日记。可以再用 pics 附上今天旅途中寄回来的明信片当配图。日记图也会发到当前会话。没装排版图技能或渲染失败时，会自动把日记发成纯文字说说（明信片配图仍会带上），不用改道。',
+    description: '把日记正文排成长文排版图，发成一条带图的 QQ 空间说说（一天一篇，按天限频）。'
+      + '**日记是长文（1500~2000 字、8~12 段），不是群聊短句**——「1~10 字别写小作文」那套不适用于日记。'
+      + '可用 pics 附当天明信片当配图。没装排版图技能或渲染失败时会自动发成纯文字说说，不用改道。',
     category: 'utility',
     parameters: {
       type: 'object',
       properties: {
-        text: { type: 'string', description: '日记全文，第一人称、你自己的口气。支持简单 markdown（标题/列表/引用/粗体）。' },
-        title: { type: 'string', description: '可选，图片顶部的标题，如「我的日记 · 10月4日」' },
-        caption: { type: 'string', description: '说说正文的一句话（图下面配的字），默认「把今天记成了一页日记。」' },
+        text: { type: 'string', description: '日记全文，第一人称、你的口气。支持简单 markdown（标题/列表/引用/粗体）。' },
+        title: { type: 'string', description: '可选，图片顶部标题，如「我的日记 · 10月4日」。' },
+        caption: { type: 'string', description: '可选，说说正文一句话；默认「把今天记成了一页日记。」' },
         pics: {
           type: 'array',
           items: { type: 'string' },
-          description: '可选。当天明信片的编号（如 ["1","3"]，编号见 qqzone__collect_diary 素材里的「明信片 #N」），最多 3 张。挑不出就别传——不要编配图、也不要填没在素材里出现过的编号。'
+          description: '可选，当天明信片编号（如 ["1","3"]，见 collect_diary 素材的「明信片 #N」），最多 3 张。'
+            + '挑不出就别传，不要编编号。'
         }
       },
       required: ['text']

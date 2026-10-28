@@ -34,6 +34,7 @@ const GATES = [
   { id: 'protect', title: '闸4c 安全插件自检（护心镜 / 视觉卫士）', probe: 'protect.mjs' },
   { id: 'secrets', title: '闸5 脱敏/隐私', probe: 'secrets.mjs' },
   { id: 'panel', title: '闸6 面板契约', probe: 'panel.mjs' },
+  { id: 'toolcost', title: '闸7 工具段预算（常驻 token 成本）', probe: 'toolcost.mjs' },
   { id: 'eslint', title: '闸8 ESLint(no-undef)', run: gateEslint, optional: true }
 ];
 
