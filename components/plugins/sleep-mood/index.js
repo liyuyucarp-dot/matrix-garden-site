@@ -27,6 +27,26 @@ import * as TL from './lib/tone-link.js';
 import { noteHerState, herStateLine } from './lib/her-ledger.js';
 import { logger as coreLogger } from '../../src/logger.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 let api = null;
 let timer = null;
 let ticking = false;
@@ -36,11 +56,11 @@ const BUS_UNSUB_SLOT = '__qqAgentSleepMoodBusUnsubs';
 function stopHeartbeat() {
   const prev = globalThis[TIMER_SLOT];
   if (prev) {
-    try { clearInterval(prev); } catch { /* ignore */ }
+    stopTimer(prev);
     globalThis[TIMER_SLOT] = null;
   }
   if (timer) {
-    try { clearInterval(timer); } catch { /* ignore */ }
+    stopTimer(timer);
     timer = null;
   }
   const unsubs = globalThis[BUS_UNSUB_SLOT];
@@ -734,7 +754,7 @@ export function activate() {
   const s = settings();
   if (!on(s.enabled)) return;
   const everySec = Math.min(600, Math.max(15, Number(s.tickSeconds) || 60));
-  timer = setInterval(() => { tick().catch(() => {}); }, everySec * 1000);
+  timer = everyTimer('sleep-mood/tick', everySec * 1000, () => { tick().catch(() => {}); });
   timer.unref?.();
   globalThis[TIMER_SLOT] = timer;
 

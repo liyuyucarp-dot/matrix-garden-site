@@ -13,6 +13,26 @@ import { searchWeb, quotaSnapshot } from '../search.js';
 import { SKILLS } from './skills-appointments.js';
 import { defaultBaseRegionId, defaultUnlockedIdsOfTheme, isDefaultTheme, isOtherworldRegion } from './theme-pack.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 export const RT = {
   cfg: () => ({}),
   log: () => {},
@@ -47,7 +67,8 @@ export function killTicker() {
   const h = G[TICKER_SLOT];
   RT.timer = null;
   if (!h) return false;
-  try { clearInterval(h.interval); } catch { /* 已失效 */ }
+  // P2：句柄可能是中央心跳返回的注销函数（不是 timer id），统一走 stopTimer
+  try { if (typeof h.interval === 'function') h.interval(); else clearInterval(h.interval); } catch { /* 已失效 */ }
   try { clearTimeout(h.first); } catch { /* 已失效 */ }
   G[TICKER_SLOT] = null;
   return true;

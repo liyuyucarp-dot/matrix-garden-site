@@ -30,6 +30,26 @@ import { startScheduler, stopScheduler } from './lib/scheduler.js';
 import { handleCommand, isCommand } from './lib/commands.js';
 import { publishPersonaCatalog, personaOf, hostPersonaCatalog, resolveCardRef, savePersonaSelection } from './lib/persona.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 let apiRef = null;
 let sched = null;
 let watchdog = null;
@@ -74,18 +94,18 @@ function ensureScheduler(s) {
  */
 function ensureWatchdog() {
   if (watchdog || disposed) return;
-  watchdog = setInterval(() => {
+  watchdog = everyTimer('bili-whale/watchdog', 60_000, () => {
     if (disposed) return;
     try { ensureScheduler(readSettings(apiRef)); } catch { /* ignore */ }
     // 宿主人设卡可能被用户改了；把目录镜像到 storage 给面板看（不含正文）。
     try { void publishPersonaCatalog(apiRef); } catch { /* ignore */ }
-  }, 60_000);
+  });
   if (typeof watchdog?.unref === 'function') watchdog.unref();
 }
 
 function stopWatchdog() {
   if (!watchdog) return;
-  try { clearInterval(watchdog); } catch { /* ignore */ }
+  stopTimer(watchdog);
   watchdog = null;
 }
 

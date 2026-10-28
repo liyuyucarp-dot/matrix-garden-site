@@ -56,6 +56,26 @@ import { autoInvite, autoSpend, autoTend, bestFoodTier, considerDepart, judgeSid
 import { LOCAL_ONLY } from './shop-album-menu.js';
 import { farmTick } from './pantry-farm.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 export async function tick() {
   if (G[TICK_RUNNING]) return;  // 上一轮没跑完 → 直接跳过，绝不并发
   G[TICK_RUNNING] = true;
@@ -514,7 +534,7 @@ export function startTicker() {
   //   只有"以全局句柄为准、让最后一个 setup 的实例接管"，才能保证进程内始终只有 1 个。
   const replaced = killTicker();
   const ms = Math.max(15000, Number(cfg().tickMs) || 60000);
-  const interval = setInterval(() => { tick().catch((e) => log(`[travel-whale] tick 异常：${e?.message ?? e}`)); }, ms);
+  const interval = everyTimer('travel-whale/tick', ms, () => { tick().catch((e) => log(`[travel-whale] tick 异常：${e?.message ?? e}`)); });
   interval.unref?.();
   const first = setTimeout(() => { tick().catch(() => {}); }, 8000);
   first.unref?.();

@@ -97,6 +97,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, getConfig } from '../../src/config.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+// 本文件已有自己的 stopTimer()（停 flush 用），这里不重复定义同名函数。
+
 const DIR = path.join(DATA_DIR, 'learning');
 const LEDGER = path.join(DIR, 'ledger.jsonl');
 const STATE = path.join(DIR, 'state.json');
@@ -1196,9 +1211,9 @@ function startTimer() {
   const s = settings();
   if (s.enabled === false || s.consensusEnabled === false || s.autoFlush === false) return;
   const sec = Math.max(15, Math.min(3600, Math.round(Number(s.autoFlushSec) || DEFAULTS.autoFlushSec)));
-  flushTimer = setInterval(() => {
+  flushTimer = everyTimer('learning-loop/flush', sec * 1000, () => {
     try { flushPool(); } catch (e) { warn('[learning] 定时批处理失败：' + (e?.message ?? e)); }
-  }, sec * 1000);
+  });
   try { flushTimer.unref?.(); } catch { /* 无 unref 也无所谓 */ }
 }
 

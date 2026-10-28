@@ -31,6 +31,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, ROOT, getConfig } from '../../src/config.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 let apiRef = null;
 let log = () => {};
 let timer = null;
@@ -373,7 +393,7 @@ function subscribeSleep() {
 
 function stopLoop() {
   const prev = globalThis[TIMER_SLOT];
-  if (prev) { try { clearInterval(prev); } catch { /* ignore */ } globalThis[TIMER_SLOT] = null; }
+  if (prev) { stopTimer(prev); globalThis[TIMER_SLOT] = null; }
   timer = null;
   running = false;
   for (const un of busUnsubs) { try { un(); } catch { /* ignore */ } }
@@ -410,7 +430,7 @@ function startLoop() {
   stopLoop();
   const c = cfg();
   if (!c.enabled) return;
-  timer = setInterval(tick, c.checkSeconds * 1000);
+  timer = everyTimer('autobiography/tick', c.checkSeconds * 1000, tick);
   if (timer.unref) timer.unref();
   globalThis[TIMER_SLOT] = timer;
   subscribeSleep();   // 总线即时触发（没有总线就只靠上面的轮询）

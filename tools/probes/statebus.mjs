@@ -102,6 +102,29 @@ if (!exists(path.join(dir, 'store.js'))) {
   }
 
   fs.rmSync(tmp, { recursive: true, force: true });
+
+  // ⑦ 接线检查：courtyard-bus 装载后必须把 infra 挂到 globalThis
+  //    —— 各组件的 everyTimer() 就是靠这个全局句柄拿时钟的（跨模块实例唯一）。
+  {
+    const busDir = path.join(repo, 'components', 'plugins', 'courtyard-bus', 'index.js');
+    const mod = await import(pathToFileURL(busDir).href);
+    const noop = () => () => {};
+    mod.setup({
+      id: 'courtyard-bus', manifest: {}, config: () => ({}),
+      registerTool: () => 't', capability: () => undefined, hasCapability: () => false,
+      isSkillActive: () => true, log: () => {}, warn: () => {}, error: () => {},
+      services: () => ({}), onServices: noop, storage: { get: () => null, set: () => true },
+      events: { on: noop, emit: () => {} }, personas: {}
+    });
+    const infra = globalThis.__courtyardInfra;
+    ok(!!infra?.clock && typeof infra.clock.every === 'function', 'wiring.clock',
+      '组件拿不到 globalThis.__courtyardInfra.clock —— everyTimer 会永远走本地降级');
+    ok(!!infra?.limiter && typeof infra.limiter.take === 'function', 'wiring.limiter',
+      '组件拿不到 globalThis.__courtyardInfra.limiter —— 主动限流不会生效');
+    ok(!!infra?.store && typeof infra.store.update === 'function', 'wiring.store',
+      '组件拿不到 globalThis.__courtyardInfra.store');
+    try { await mod.dispose(); } catch { /* ignore */ }
+  }
 }
 
 const okAll = problems.length === 0;

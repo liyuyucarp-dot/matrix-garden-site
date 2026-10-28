@@ -23,6 +23,8 @@ import { createStore } from './store.js';
 import { createClock } from './clock.js';
 import { createLimiter } from './limiter.js';
 
+
+
 const listeners = new Map();   // topic → Set<fn>
 const stats = { published: 0, delivered: 0, errors: 0 };
 
@@ -64,6 +66,9 @@ export function setup(api) {
     store = createStore({ log, debounceMs: 3000 });
     clock = createClock({ log });
     limiter = createLimiter({ log });
+    // ★ 2026-10-28（P2）：把三个基础设施挂到 globalThis —— 组件不需要 api 也能拿到，
+    //   而且跨模块实例唯一（热重载后旧实例仍指向同一份，这正是 travel-whale 用 G[TICKER_SLOT] 的理由）。
+    try { globalThis.__courtyardInfra = { store, clock, limiter, bus }; } catch { /* ignore */ }
     log('庭院总线已加载（Pub/Sub + 状态原语 store/clock/limit；**均可选**，拿不到请自行降级）');
   } catch (err) {
     // 任何一项起不来都不影响总线本身
@@ -78,6 +83,7 @@ export async function dispose() {
   try { if (store) await store.flushAll(); } catch { /* ignore */ }
   try { if (clock) clock.dispose(); } catch { /* ignore */ }
   try { if (limiter) limiter.reset(); } catch { /* ignore */ }
+  try { if (globalThis.__courtyardInfra?.clock === clock) delete globalThis.__courtyardInfra; } catch { /* ignore */ }
 }
 
 export function deactivate() { return dispose(); }

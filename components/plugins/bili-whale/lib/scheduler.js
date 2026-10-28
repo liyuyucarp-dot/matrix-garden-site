@@ -10,6 +10,26 @@ import { planTick, markPlan, runWake, runSkip, runCommentListen, runLiveListen }
 import { getDb, markDirty, addEvent } from './store.js';
 import { settings as readSettings, truncate } from './util.js';
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 const KEY = '__qqagent_bili_whale_scheduler__';
 let current = null;
 
@@ -90,9 +110,9 @@ export function startScheduler(api, log) {
     }
   }
 
-  const t1 = setInterval(() => safe(tick, '生物钟'), 60_000);
-  const t2 = setInterval(() => safe(commentTick, '评论区监听'), 30_000);
-  const t3 = setInterval(() => safe(liveTick, '直播监听'), 10_000);
+  const t1 = everyTimer('bili-whale/生物钟', 60_000, () => safe(tick, '生物钟'));
+  const t2 = everyTimer('bili-whale/评论区', 30_000, () => safe(commentTick, '评论区监听'));
+  const t3 = everyTimer('bili-whale/直播间', 10_000, () => safe(liveTick, '直播监听'));
   timers.push(t1, t2, t3);
   for (const t of timers) if (typeof t?.unref === 'function') t.unref();
 
@@ -105,7 +125,7 @@ export function startScheduler(api, log) {
     epoch,
     stop(reason = '') {
       stopped = true;
-      for (const t of timers) { try { clearInterval(t); } catch { /* ignore */ } }
+      for (const t of timers) stopTimer(t);
       for (const t of [s0, s1, s2]) { try { clearTimeout(t); } catch { /* ignore */ } }
       if (globalThis[KEY] === current) {
         try { delete globalThis[KEY]; } catch { globalThis[KEY] = null; }

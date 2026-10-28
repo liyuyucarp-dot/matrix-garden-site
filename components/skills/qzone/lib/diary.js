@@ -63,6 +63,26 @@ import {
   getOnebot, setOnebot, resetCookies, setLogger
 } from './qzone-core.js'
 
+// ── 2026-10-28（P2）：定时器统一交给中央心跳 ────────────────────────────────
+// 有 courtyard.clock 就挂到它那**一个 1s 主循环**上（±10% 抖动错峰、单任务超时、一处注销）；
+// 拿不到就退回本地 setInterval —— 组件可能被单独安装，必须能独立跑。
+function infraClock() {
+  try { return globalThis.__courtyardInfra?.clock || null; } catch { return null; }
+}
+function everyTimer(id, ms, fn) {
+  const clk = infraClock();
+  if (clk) { try { return clk.every(id, ms, fn, { jitter: 0.1 }); } catch { /* 落到本地 */ } }
+  const t = setInterval(fn, ms);
+  try { t.unref?.(); } catch { /* ignore */ }
+  return t;
+}
+function stopTimer(h) {
+  if (!h) return;
+  if (typeof h === 'function') { try { h(); } catch { /* ignore */ } return; }
+  try { clearInterval(h); } catch { /* ignore */ }
+}
+
+
 const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')   // lib/ 的上一层 = 技能根   // …/skills/qqzone
 const SKILL_ID = 'qqzone'
 const TOOL = (n) => `${SKILL_ID}__${n}`
@@ -1949,7 +1969,7 @@ export function autoDiaryStatus() {
 /** 停掉定时器 —— 能清掉**任意实例**留下的那一个（这正是 §56 缺的那一环）。 */
 export function stopAutoDiary() {
   const g = globalThis[AUTO_DIARY_SLOT];
-  if (g && g.timer) { try { clearInterval(g.timer); } catch { /* ignore */ } }
+  if (g && g.timer) stopTimer(g.timer);
   globalThis[AUTO_DIARY_SLOT] = null;
 }
 
@@ -1957,7 +1977,7 @@ export function stopAutoDiary() {
 export function startAutoDiary() {
   stopAutoDiary();
   const g = { timer: null, busy: false };
-  g.timer = setInterval(() => { tickAutoDiary().catch(() => {}) }, AUTO_DIARY_CHECK_MS);
+  g.timer = everyTimer('qzone/auto-diary', AUTO_DIARY_CHECK_MS, () => { tickAutoDiary().catch(() => {}) });
   g.timer.unref?.();
   globalThis[AUTO_DIARY_SLOT] = g;
   // ★ 2026-10-14：启动时把**判据现状**一并打出来。这一条日志就能回答

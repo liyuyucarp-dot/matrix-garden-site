@@ -763,6 +763,27 @@ function nextDelayMs(s) {
 }
 
 /**
+ * ★ 2026-10-28（P6）：向全局限流器申请一次「主动消息」额度。
+ *
+ * 为什么需要：本插件自己有一套配额（每天几条 / 冷却 / 静默时段），但**看不见别的组件**
+ * 也在主动发（旅行明信片、空间主动评论）。极端情况下同一小时她会从多个来源各说一句。
+ *
+ * ⚠️ 降级红线：拿不到 `courtyard.limit`（插件被单独安装）时**一律放行**，
+ *    行为与加这层之前逐字一致 —— 基础设施只能"更克制"，不能"让功能消失"。
+ */
+function takeProactiveQuota(scope) {
+  let rl = null;
+  try { rl = globalThis.__courtyardInfra?.limiter || null; } catch { rl = null; }
+  if (!rl || typeof rl.take !== 'function') return { ok: true, degraded: true };
+  try {
+    const r = rl.take({ chatKey: String(scope || 'silence-ping/round'), proactive: true });
+    return r && r.allowed ? { ok: true } : { ok: false, reason: r?.reason || '主动消息额度已用完' };
+  } catch {
+    return { ok: true, degraded: true };   // 限流器自己出错 → 放行（绝不因基础设施报错而停止工作）
+  }
+}
+
+/**
  * 后台循环：醒来 → 判断 → 让 AI 决定 → 发出 → 记录 → 继续睡。
  * 幂等（已经在跑就直接返回），所以 activate 和钩子都可以放心调。
  */
@@ -1722,6 +1743,13 @@ async function runCycle() {
     // ② 现在能不能发
     const gate = canSendNow(state, s, now);
     if (!gate.ok) { dbg(`闸门拦住：${gate.reason}`); return { skipped: gate.reason }; }
+    // ②b ★ 2026-10-28（P6）：全局主动消息限流
+    //   本组件只看得见"自己的配额"（每天几条/冷却多久），看不见**别的组件**也在主动发
+    //   （明信片、空间评论）。这里统一向 courtyard.limit 申请一次主动额度：
+    //   · 拿不到 capability（组件单独安装）→ 直接放行，行为与以前完全一致
+    //   · 每次"醒来"扣 1 个主动令牌，额度用完就整轮跳过（保守：宁可少说，不要刷屏）
+    const rateGate = takeProactiveQuota('silence-ping/round');
+    if (!rateGate.ok) { dbg(`全局限流拦住：${rateGate.reason}`); return { skipped: 'rate-limited' }; }
     dbg(`闸门放行；dayCount=${state.dayCount}/${num(s.maxPerDay, 5, 0, 100)}`);
 
     // ③ 浏览私聊：先把每个人的最新情况记进存档，再挑出这次要逐个检查的对象
