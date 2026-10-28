@@ -66,6 +66,29 @@ import {
   getOnebot, setOnebot, resetCookies, setLogger
 } from './qzone-core.js'
 
+// ── 2026-10-28（P5）：统一状态原语（读缓存 + 原子写）────────────────────────
+// 之前这里各写各的：有的 tmp+rename、有的裸 writeFileSync（崩在半行就是半截 JSON）、
+// 有的每次 readFileSync + JSON.parse（热路径反复读盘）。
+// 现在统一走 courtyard.store；**拿不到就逐字退回原来的 fs 写法**（组件可能被单独安装）。
+function infraStore() {
+  try { return globalThis.__courtyardInfra?.store || null; } catch { return null; }
+}
+function readTextCached(file) {
+  const st = infraStore();
+  if (st && typeof st.readText === 'function') { try { return st.readText(file); } catch { /* 落到 fs */ } }
+  return readTextCached(file);
+}
+function writeTextCached(file, text) {
+  const st = infraStore();
+  if (st && typeof st.writeText === 'function') { try { return st.writeText(file, text); } catch { /* 落到 fs */ } }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, text, 'utf8');
+  fs.renameSync(tmp, file);
+  return true;
+}
+
+
 const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')   // lib/ 的上一层 = 技能根   // …/skills/qzone
 const SKILL_ID = 'qzone'
 const TOOL = (n) => `${SKILL_ID}__${n}`
@@ -369,9 +392,7 @@ export function loadState() {
 export function saveState(st) {
   const file = stateFile()
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  const tmp = file + '.tmp'
-  fs.writeFileSync(tmp, JSON.stringify(st, null, 2), 'utf8')
-  fs.renameSync(tmp, file)   // 原子替换：崩在半路不会留下半个 JSON
+  writeTextCached(file, JSON.stringify(st, null, 2))   // P5：统一原子写（原来自己 tmp+rename）
 }
 
 /**
@@ -1248,9 +1269,7 @@ function saveInbox(ib) {
   const file = inboxFile()
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true })
-    const tmp = `${file}.tmp`
-    fs.writeFileSync(tmp, JSON.stringify(ib, null, 2), 'utf8')
-    fs.renameSync(tmp, file)      // 原子替换，与 state.json 同一纪律
+    writeTextCached(file, JSON.stringify(ib, null, 2))   // P5：统一原子写
   } catch (e) {
     dbg('inbox-save', false, String(e?.message ?? e).slice(0, 100))
   }

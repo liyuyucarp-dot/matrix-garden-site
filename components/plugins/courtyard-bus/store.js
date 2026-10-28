@@ -60,7 +60,9 @@ function stringifyDoc(file, doc) {
 export function createStore({ log = () => {}, debounceMs = 3000, recheckMs = 60000 } = {}) {
   /** key（绝对路径）→ { doc, mtime, loadedAt, dirty, timer, chain, writing } */
   const entries = new Map();
-  const stats = { hits: 0, misses: 0, reads: 0, writes: 0, coalesced: 0, flushes: 0, errors: 0 };
+  /** key → { text, mtimeMs }：给"只要原文、自己解析"的组件用（P5） */
+  const textCache = new Map();
+  const stats = { hits: 0, misses: 0, reads: 0, writes: 0, coalesced: 0, flushes: 0, errors: 0, textHits: 0, textReads: 0 };
 
   function entry(file) {
     const key = path.resolve(String(file || ''));
@@ -195,10 +197,50 @@ export function createStore({ log = () => {}, debounceMs = 3000, recheckMs = 600
 
     /** 丢掉缓存（外部改了文件、或测试用）。 */
     invalidate(file) {
-      const e = entries.get(path.resolve(String(file || '')));
+      const key = path.resolve(String(file || ''));
+      textCache.delete(key);
+      const e = entries.get(key);
       if (!e) return false;
       if (e.timer) { clearTimeout(e.timer); e.timer = null; }
       e.doc = undefined; e.mtime = 0; e.loadedAt = 0; e.dirty = false;
+      return true;
+    },
+
+    /**
+     * 同步读原文（P5）：每次只 `stat` 比对 mtime，没变就直接给缓存 —— 省掉 readFileSync + JSON.parse。
+     *
+     * 为什么不像 read() 那样有 60s 复核窗口：这里是给**存档级**文件用的（旅行存档、心境、账本），
+     * 读旧值会被写回去覆盖新数据。多一次 stat（约 0.05ms）换绝对正确，值得。
+     */
+    readText(file) {
+      const key = path.resolve(String(file || ''));
+      let mtime = 0;
+      try { mtime = fs.statSync(key).mtimeMs; } catch { mtime = 0; }
+      const hit = textCache.get(key);
+      if (hit && mtime && hit.mtimeMs === mtime) { stats.textHits += 1; return hit.text; }
+      let text = '';
+      try {
+        text = fs.readFileSync(key, 'utf8');
+        stats.textReads += 1;
+      } catch (err) {
+        if (err?.code !== 'ENOENT') { stats.errors += 1; log(`[store] 读失败 ${key}: ${err?.message ?? err}`); }
+        text = '';
+      }
+      if (mtime) textCache.set(key, { text, mtimeMs: mtime });
+      return text;
+    },
+
+    /** 同步写原文（P5）：原子写 + 立刻更新缓存。语义与"自己 tmp+rename"完全一致，只是不再各写一遍。 */
+    writeText(file, text) {
+      const key = path.resolve(String(file || ''));
+      writeAtomic(key, String(text ?? ''), log);
+      stats.writes += 1;
+      let mtime = 0;
+      try { mtime = fs.statSync(key).mtimeMs; } catch { mtime = 0; }
+      if (mtime) textCache.set(key, { text: String(text ?? ''), mtimeMs: mtime });
+      // 同一个文件如果也有 doc 缓存，一并置脏（避免两条通道读到不同版本）
+      const e = entries.get(key);
+      if (e) { e.doc = undefined; e.mtime = mtime; e.loadedAt = 0; }
       return true;
     },
 

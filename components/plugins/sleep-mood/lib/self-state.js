@@ -17,6 +17,29 @@ import path from 'node:path';
 import { DATA_DIR } from './config.js';
 import { stepVitality } from './mood-chain.js';
 
+// ── 2026-10-28（P5）：统一状态原语（读缓存 + 原子写）────────────────────────
+// 之前这里各写各的：有的 tmp+rename、有的裸 writeFileSync（崩在半行就是半截 JSON）、
+// 有的每次 readFileSync + JSON.parse（热路径反复读盘）。
+// 现在统一走 courtyard.store；**拿不到就逐字退回原来的 fs 写法**（组件可能被单独安装）。
+function infraStore() {
+  try { return globalThis.__courtyardInfra?.store || null; } catch { return null; }
+}
+function readTextCached(file) {
+  const st = infraStore();
+  if (st && typeof st.readText === 'function') { try { return st.readText(file); } catch { /* 落到 fs */ } }
+  return fs.readFileSync(file, 'utf8');
+}
+function writeTextCached(file, text) {
+  const st = infraStore();
+  if (st && typeof st.writeText === 'function') { try { return st.writeText(file, text); } catch { /* 落到 fs */ } }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, text, 'utf8');
+  fs.renameSync(tmp, file);
+  return true;
+}
+
+
 const STATE_FILE = 'self-state.json';
 
 export const SELF_STATE_DEFAULTS = {
@@ -38,7 +61,7 @@ export function selfStatePath() {
 export function readSelfState(now = Date.now()) {
   const file = selfStatePath();
   try {
-    const j = JSON.parse(fs.readFileSync(file, 'utf8')) || {};
+    const j = JSON.parse(readTextCached(file)) || {};
     // ★ 兼容补丁（2026-10-25）：v1（现役宿主上的 1.x 版）把状态包在 `self` 里写，
     //   形如 `{ self: { status, what, at }, updatedAt }`。本文件重构时只读顶层
     //   `raw.status`，于是**上一版留下的存档一律被读成 awake**（她正"煮面"也会丢），
@@ -81,7 +104,7 @@ export function writeSelfState(next = {}) {
   const file = selfStatePath();
   try {
     let prev = {};
-    try { prev = JSON.parse(fs.readFileSync(file, 'utf8')) || {}; } catch { prev = {}; }
+    try { prev = JSON.parse(readTextCached(file)) || {}; } catch { prev = {}; }
     // ★ 兼容补丁（2026-10-25）：沿用 v1 的落盘结构 `{ self: {...}, updatedAt }`。
     //   旧存档（v1 嵌套 / 本版曾写出的"顶层+self 并存"脏文件）都先摊平再合并，
     //   这样无论回滚到 v1 还是继续跑 v2，读到的都是同一份状态，不会各读各的。
@@ -96,9 +119,7 @@ export function writeSelfState(next = {}) {
       at: Number(next.at) || Date.now()
     };
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const tmp = `${file}.tmp.${process.pid}`;
-    fs.writeFileSync(tmp, JSON.stringify({ self: merged, updatedAt: Date.now() }, null, 2), 'utf8');
-    fs.renameSync(tmp, file);
+    writeTextCached(file, JSON.stringify({ self: merged, updatedAt: Date.now() }, null, 2));
     return true;
   } catch {
     return false;

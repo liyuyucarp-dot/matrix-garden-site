@@ -1,7 +1,7 @@
 {
   "id": "courtyard-bus",
   "name": "庭院总线",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "apiVersion": 1,
   "category": "utility",
   "description": "矩阵庭院的基础设施层：① 进程内事件总线（Pub/Sub，替代跨目录 JSON 轮询的延迟）② 统一状态原语 StateStore（读缓存 + 按文件排队 + write-temp-rename 原子写 + 防抖落盘）③ 中央心跳 Heartbeat（收拢各组件散落的 setInterval，带抖动错峰）④ 全局发送限流（令牌桶，只拦主动消息）。全部**可选**：拿不到 capability 的组件保持原有直读直写路径。",

@@ -1,6 +1,6 @@
 {
   "packageName": "矩阵庭院-完整包",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "componentCount": 17,
   "patches": [
     {
@@ -55,7 +55,7 @@
     {
       "kind": "plugins",
       "id": "courtyard-bus",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "path": "components/plugins/courtyard-bus"
     },
     {

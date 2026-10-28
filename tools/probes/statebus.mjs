@@ -125,6 +125,22 @@ if (!exists(path.join(dir, 'store.js'))) {
       '组件拿不到 globalThis.__courtyardInfra.store');
     try { await mod.dispose(); } catch { /* ignore */ }
   }
+
+  // ⑧ P5 的 readText / writeText（存档级读写：读走 mtime 缓存、写必须原子）
+  {
+    const st2 = createStore({ debounceMs: 0 });
+    const t2 = fs.mkdtempSync(path.join(os.tmpdir(), 'mg-text-'));
+    const f = path.join(t2, 'state.json');
+    st2.writeText(f, JSON.stringify({ a: 1 }));
+    ok(JSON.parse(st2.readText(f)).a === 1, 'store.text-roundtrip', '写后读不回原值');
+    const hits0 = st2.stats().textHits;
+    st2.readText(f); st2.readText(f);
+    ok(st2.stats().textHits > hits0, 'store.text-cache', '连续读没有命中缓存（等于没省 IO）');
+    fs.writeFileSync(f, JSON.stringify({ a: 2 }), 'utf8');   // 模拟外部/其它路径改了文件
+    ok(JSON.parse(st2.readText(f)).a === 2, 'store.text-external', '外部改动后读到旧缓存 —— 存档会被旧值覆盖');
+    ok(fs.readdirSync(t2).filter((x) => x.endsWith('.tmp')).length === 0, 'store.text-atomic', 'writeText 残留 tmp');
+    fs.rmSync(t2, { recursive: true, force: true });
+  }
 }
 
 const okAll = problems.length === 0;

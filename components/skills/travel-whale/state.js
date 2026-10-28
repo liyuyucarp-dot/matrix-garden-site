@@ -26,6 +26,29 @@ import {
   onThemeChange
 } from './core/theme-pack.js';
 
+// ── 2026-10-28（P5）：统一状态原语（读缓存 + 原子写）────────────────────────
+// 之前这里各写各的：有的 tmp+rename、有的裸 writeFileSync（崩在半行就是半截 JSON）、
+// 有的每次 readFileSync + JSON.parse（热路径反复读盘）。
+// 现在统一走 courtyard.store；**拿不到就逐字退回原来的 fs 写法**（组件可能被单独安装）。
+function infraStore() {
+  try { return globalThis.__courtyardInfra?.store || null; } catch { return null; }
+}
+function readTextCached(file) {
+  const st = infraStore();
+  if (st && typeof st.readText === 'function') { try { return st.readText(file); } catch { /* 落到 fs */ } }
+  return fs.readFileSync(file, 'utf8');
+}
+function writeTextCached(file, text) {
+  const st = infraStore();
+  if (st && typeof st.writeText === 'function') { try { return st.writeText(file, text); } catch { /* 落到 fs */ } }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, text, 'utf8');
+  fs.renameSync(tmp, file);
+  return true;
+}
+
+
 // ── 常量 ──────────────────────────────────────────────────────────────────
 
 /**
@@ -1080,7 +1103,8 @@ export function unlockEquipBuyables(state, arrivedId, { count = 3, rand = Math.r
 /** 读状态；不存在/损坏都从空状态开始（损坏不该让功能挂掉）。 */
 export function loadState(chatKey) {
   try {
-    const raw = JSON.parse(fs.readFileSync(fileOf(chatKey), 'utf8'));
+    // P5：只加读缓存（stat 比对 mtime，没变就不读盘不解析）；**写入路径一律不动**
+    const raw = JSON.parse(readTextCached(fileOf(chatKey)));
     if (raw && typeof raw === 'object' && raw.version) {
       // 深合并一层：将来给嵌套对象（如 pond.glow）加字段时，旧存档缺字段也能补上；
       // 只做一层是因为本结构最多两层，再深了就说明设计该拆了。

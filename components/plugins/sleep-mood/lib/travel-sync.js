@@ -14,6 +14,29 @@ import path from 'node:path';
 import { DATA_DIR } from './config.js';
 import { pickState, phaseOf, worldOf } from './travel-states.js';
 
+// ── 2026-10-28（P5）：统一状态原语（读缓存 + 原子写）────────────────────────
+// 之前这里各写各的：有的 tmp+rename、有的裸 writeFileSync（崩在半行就是半截 JSON）、
+// 有的每次 readFileSync + JSON.parse（热路径反复读盘）。
+// 现在统一走 courtyard.store；**拿不到就逐字退回原来的 fs 写法**（组件可能被单独安装）。
+function infraStore() {
+  try { return globalThis.__courtyardInfra?.store || null; } catch { return null; }
+}
+function readTextCached(file) {
+  const st = infraStore();
+  if (st && typeof st.readText === 'function') { try { return st.readText(file); } catch { /* 落到 fs */ } }
+  return fs.readFileSync(file, 'utf8');
+}
+function writeTextCached(file, text) {
+  const st = infraStore();
+  if (st && typeof st.writeText === 'function') { try { return st.writeText(file, text); } catch { /* 落到 fs */ } }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, text, 'utf8');
+  fs.renameSync(tmp, file);
+  return true;
+}
+
+
 const COMPANION_NAMES = {
   fox: '黑发兽耳小狐狸',
   gpt: '小白龙',
@@ -432,7 +455,7 @@ export function readMoodCursor() {
 
 export function writeMoodCursor(c) {
   try {
-    fs.writeFileSync(
+    writeTextCached(
       path.join(DATA_DIR, MOOD_CURSOR_FILE),
       JSON.stringify({ at: Number(c?.at) || 0, ids: (c?.ids || []).map(String) }, null, 2)
     );
