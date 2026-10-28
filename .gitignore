@@ -9,3 +9,6 @@ _core_patch_backup_*/
 Thumbs.db
 .vscode/
 .idea/
+
+# 一次性审查产物
+_tools-inventory.json
