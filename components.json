@@ -1,7 +1,7 @@
 {
   "packageName": "矩阵庭院-完整包",
-  "version": "3.0.0",
-  "componentCount": 16,
+  "version": "3.1.0",
+  "componentCount": 17,
   "patches": [
     {
       "id": "core-048",
@@ -105,6 +105,18 @@
       "id": "think-gate",
       "version": "1.1.0",
       "path": "components/plugins/think-gate"
+    },
+    {
+      "kind": "plugins",
+      "id": "persona-shield",
+      "version": "1.0.0",
+      "path": "components/plugins/persona-shield"
+    },
+    {
+      "kind": "plugins",
+      "id": "vision-guard",
+      "version": "1.1.0",
+      "path": "components/plugins/vision-guard"
     }
   ]
 }
