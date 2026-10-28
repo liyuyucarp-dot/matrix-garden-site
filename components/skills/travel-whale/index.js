@@ -2,6 +2,8 @@
 // 职责：技能入口（Facade）：生命周期（setup/activate/deactivate/dispose）、提示词段（promptSections）与全量向后兼容导出
 
 import * as S from './state.js?v=realworld-1';
+import { HEADWEAR_STYLES, HAIR_STYLES } from './postcard.js?v=realworld-1';
+import { outfitOf, girlName } from './outfits.js';
 import { registerMergedTools } from './merged-tools.js';
 import * as HM from './home.js';
 import {
@@ -535,6 +537,48 @@ export function promptSections(ctx) {
         + '也不要把它当成你自己的口头禅 —— 之后聊天、写空间日记、回想今天发生了什么时，'
         + '都要记得那句是 TA 说的，**不是你说过的**。（你自己想说什么，另起一句说。）'
     });
+    // ★★ 2026-10-28「现在的穿着」：她得知道自己身上是什么，否则换完衣服下一步聊天就自相矛盾
+    //   （"我穿着巫女服" vs 实际还写着默认着装）。
+    //   ⚠️ 必须 `volatile: true` —— 穿着是会变的状态，宿主据此把它挪到 **user 提示词末尾**，
+    //      不进 system 前缀（否则换一次衣服就把整段前缀缓存打穿）。
+    //   ⚠️ 只在**真穿着非默认**时才注入：默认着装已经在立绘/角色段里写过，重复一遍纯浪费。
+    try {
+      const wst = S.loadState(ctx.chatKey);
+      const worn = (wst?.wardrobe?.worn && typeof wst.wardrobe.worn === 'object') ? wst.wardrobe.worn : {};
+      const headw = (wst?.wardrobe?.headwear && typeof wst.wardrobe.headwear === 'object') ? wst.wardrobe.headwear : {};
+      const hairm = (wst?.wardrobe?.hair && typeof wst.wardrobe.hair === 'object') ? wst.wardrobe.hair : {};
+      const lines = [];
+      for (const [gid, oid] of Object.entries(worn)) {
+        const sid = String(oid || '');
+        if (!sid) continue;
+        let label = '';
+        if (sid.startsWith('default:')) {
+          const whom = sid.slice(8);
+          if (whom === gid) continue;                        // 借自己的默认 = 不算换装
+          label = `借穿「${girlName(whom)}」原本那身`;
+        } else {
+          const o = outfitOf(sid);
+          if (!o) continue;
+          label = `「${o.name}」`;
+        }
+        const hw = String(headw[gid] || '');
+        const hwText = hw && hw !== 'default' ? `，头饰：${HEADWEAR_STYLES[hw]?.name || hw}` : '';
+        const hr = String(hairm[gid] || '');
+        const hrText = hr && hr !== 'default' ? `，发型：${HAIR_STYLES[hr]?.name || hr}` : '';
+        lines.push(`· ${girlName(gid)}：${label}${hwText}${hrText}`);
+      }
+      if (lines.length) {
+        sections.push({
+          id: 'travel-whale-wearing',
+          title: '现在的穿着',
+          priority: 28,
+          volatile: true,
+          content: '她们此刻穿的是这些（**这就是她们身上的样子**，聊天/拍照/写信都按这个来；'
+            + '不要再说成别套，也不用主动复述衣服细节）：\n' + lines.join('\n')
+        });
+      }
+    } catch { /* 读不到存档就跳过 */ }
+
     return sections;
   } catch { return []; }
 }

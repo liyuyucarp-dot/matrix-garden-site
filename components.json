@@ -24,7 +24,7 @@
     {
       "kind": "skills",
       "id": "courtyard-map",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "path": "components/skills/courtyard-map"
     },
     {
@@ -37,7 +37,7 @@
     {
       "kind": "skills",
       "id": "travel-whale",
-      "version": "4.6.0",
+      "version": "4.9.0",
       "path": "components/skills/travel-whale"
     },
     {

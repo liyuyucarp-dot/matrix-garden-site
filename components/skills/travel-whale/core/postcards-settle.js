@@ -31,6 +31,13 @@ import {
 } from './world-sync.js';
 import { say, sayImage, sayP, sayImageP } from './broadcast.js';
 import { autoHarvest } from './autonomy.js';
+/** 衣柜名册（从 COMPANIONS 派生；拿不到就回退内置表）—— 2026-10-28 修「衣柜锁角色」 */
+const girlsNowW = () => {
+  try { return OW.wardrobeGirls({ companions: S.COMPANIONS }); }
+  catch { return OW.WARDROBE_GIRLS; }
+};
+
+
 
 /**
  * 「这张明信片的图**真的投出去过**吗」的账本（key = album 条目的 id）。
@@ -130,12 +137,19 @@ export function outfitsForCards(state) {
     //   但要保证被借的那位**确实存在**、且不是她自己（借自己＝默认，没必要记）。
     if (sid.startsWith('default:')) {
       const whom = sid.slice(8);
-      if (whom !== girl && OW.WARDROBE_GIRLS.some((x) => x.id === whom)) out[girl] = sid;
+      if (whom !== girl && girlsNowW().some((x) => x.id === whom)) out[girl] = sid;
       continue;
     }
     const o = OW.outfitOf(sid);
-    if (o && owned[o.id] && o.who === girl) out[girl] = o.id;
+    // ★★ 2026-10-28（用户拍板）：服装改绑世界 —— **不再看 `o.who`**。
+    //   这里原来有 `&& o.who === girl`，改绑之后它就变成"工具说换好了、照片还是默认着装"的元凶
+    //   （换装对画面不生效，肉眼极难发现）。只校验"买过没有"。
+    if (o && owned[o.id]) out[girl] = o.id;
   }
+  // 头饰槽：图像那侧是 `composeCharacter(id, outfitId)` 的两参签名，头饰从这份状态里带进去
+  // （见 postcard.js 的 setWardrobeHeadwear）。
+  try { P.setWardrobeHeadwear(w.headwear); } catch { /* 老版本没有这个导出也无所谓 */ }
+  try { P.setWardrobeHair(w.hair); } catch { /* 同上 */ }
   return out;
 }
 
@@ -148,7 +162,7 @@ export function wardrobeText(st) {
   // ⚠️ 解锁判据 = **去过那个子区域**（她自己或旅伴去都算，`areasSeen` 里两趟都记）
   const canBuy = (o) => Boolean(seen[`${o.region}|${o.area}`]);
 
-  const mine = OW.WARDROBE_GIRLS.map((g) => {
+  const mine = girlsNowW().map((g) => {
     const list = OW.outfitsOf(g.id).filter(has);
     const curId = String(worn[g.id] || '');
     const cur = curId ? OW.outfitOf(curId) : null;
@@ -179,7 +193,7 @@ export function wardrobeText(st) {
   //   ⚠️ 只改**门禁**；柜内每套衣服"能不能买"仍按原判据（去过 / 已拥有），
   //      别把两层混成一个（那正是 §「两套判据」踩过的坑）。
   const invited = ownedCompanionIds(st);            // 已邀请的旅伴 id（不含她自己）
-  const borrowables = OW.WARDROBE_GIRLS.filter((g) => g.id !== 'whale' && invited.includes(g.id));
+  const borrowables = girlsNowW().filter((g) => g.id !== 'whale' && invited.includes(g.id));
 
   if (!invited.length && !got) {
     return [

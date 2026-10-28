@@ -286,11 +286,10 @@ let favorCache = { at: 0, list: [] };
 function readVitals() {
   const j = readJson(path.join(DATA_DIR, 'mood.json')) || {};
   const num = (v) => (Number.isFinite(Number(v)) ? Math.max(0, Math.min(100, Math.round(Number(v)))) : null);
-  // ★ 2026-10-25（v2.2.1）：sleep-mood 换成「元气 + 具身情境心境」两条轴之后，
-  //   `depress` / `spunk` / `neglect` 已被降级成恒 0 的兼容桩 —— 继续读它们，
-  //   面板上会常驻三根永远为空的条，看起来像"她抑郁到底/毫无活力"，纯属误导。
-  //   现在只暴露真实存在的量：vitality（身体轴）、fatigue（= 100 - vitality，旧字段仍同步维护）、
-  //   mood / satisfaction / rage（心境投影）。
+  // ★ 2026-10-28：**元气单轴**。`mood` / `satisfaction` / `rage` 早就是 sleep-mood 的
+  //   兼容投影字段（由 activeTags 推算出来给人看的），不是她真实的驱动量 ——
+  //   面板上继续摆这三根条会让人以为"她心情 93 / 很满足 / 在生气"，纯属误导。
+  //   现在只暴露真正会变的：vitality（身体轴）+ 具身情境 Tag（心境）。
   const vit = num(j.vitality?.value
     ?? (Number.isFinite(Number(j.fatigue?.value)) ? 100 - Number(j.fatigue.value) : null));
   // ★ 2026-10-25：具身情境 Tag 是 v2 的第二条轴（最多 2 个）。
@@ -308,10 +307,8 @@ function readVitals() {
     }));
   return {
     vitality: vit,
-    fatigue: num(j.fatigue?.value),
-    mood: num(j.mood?.value),
-    satisfaction: num(j.satisfaction?.value),
-    rage: num(j.rage?.value),
+    // 旧存档没有 vitality 时才回退疲劳（100 - vitality 的同义字段）
+    fatigue: vit === null ? num(j.fatigue?.value) : null,
     tags
   };
 }

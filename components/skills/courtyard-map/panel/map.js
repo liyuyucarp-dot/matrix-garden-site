@@ -606,14 +606,14 @@
     if (hasVitals || hasFavor) {
       if (hasVitals) {
         var vc = el('div', 'card');
-        vc.appendChild(el('h2', '', '心情与身体'));
+        vc.appendChild(el('h2', '', '元气与心境'));
         var vit = snap.vitals;
-        // v2.2.1：depress / spunk / neglect 在 sleep-mood v2 里已是恒 0 的兼容桩，
-        // 不再展示（否则面板常驻三根空条）；有 vitality 就显示元气，老存档回退疲劳。
-        var vitRows = [['心情', vit.mood], ['满足', vit.satisfaction]];
+        // ★ 2026-10-28：元气单轴。`mood` / `satisfaction` / `rage` 是 sleep-mood 的兼容投影
+        //   （由情境 Tag 推算给人看的），不是她的真实驱动量 —— 摆出来只会读成
+        //   "心情 93 / 很满足 / 在生气"，误导。现在只画一条元气（老存档回退疲劳）。
+        var vitRows = [];
         if (vit.vitality !== null && vit.vitality !== undefined) vitRows.push(['元气', vit.vitality]);
         else vitRows.push(['疲劳', vit.fatigue]);
-        vitRows.push(['愤怒', vit.rage]);
         vitRows
           .forEach(function (p) {
             if (p[1] === null || p[1] === undefined) return;

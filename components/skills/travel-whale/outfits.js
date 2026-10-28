@@ -19,7 +19,15 @@
 /** 单套价格（亿 TOKEN）。用户口径："2000 亿不错"。 */
 export const OUTFIT_PRICE = 2000;
 
-/** 六位少女（衣柜界面按这个顺序排）。`id` 与 `state.js` 的 COMPANIONS 对齐；`whale` 是她本人。 */
+/** 六位少女（衣柜界面按这个顺序排）。`id` 与 `state.js` 的 COMPANIONS 对齐；`whale` 是她本人。
+ *
+ *  ⚠️ **2026-10-28：这张表已降级为「兜底」**，不再是权威名册。
+ *     坑：这里写死 8 个、注释说"与 COMPANIONS 对齐"，但 persona 已经能热插拔
+ *     （`persona/companions.json` 可整体替换 COMPANIONS），衣柜这张表没跟着走 ⇒
+ *     换角色后新旅伴在衣柜里"不存在"，`whale_wear` 直接回「没有叫「X」的少女」。
+ *     现在权威来源是 `wardrobeGirls()`（从 COMPANIONS 派生）；本常量只在拿不到
+ *     名册时兜底（组件单独运行、或调用方没传 companions）。
+ */
 export const WARDROBE_GIRLS = [
   { id: 'whale', name: '小鲸鱼', emoji: '🐋' },
   { id: 'fox', name: '黑发兽耳小狐狸', emoji: '🦊' },
@@ -32,13 +40,70 @@ export const WARDROBE_GIRLS = [
   { id: 'qwen', name: '千问', emoji: '🪭' }
 ];
 
+/** 她本人的 girl id（**永远存在**，不在 COMPANIONS 里 —— 她是主体不是旅伴）。 */
+export const SELF_GIRL_ID = 'whale';
+
+/**
+ * 衣柜"少女"名册 —— **单一真相源**（2026-10-28 修「衣柜锁角色」）。
+ *
+ * 顺序：本人（`whale`，显示名取当前 persona 的 `whaleName`）→ 当前全部旅伴（按 COMPANIONS 声明序）。
+ * 拿不到 `companions`（没传/为空）时回退 {@link WARDROBE_GIRLS}，保证组件单独跑也不炸。
+ *
+ * @param {{companions?:object, selfName?:string}} [opts]
+ * @returns {Array<{id:string,name:string,emoji:string,self?:boolean}>}
+ */
+export function wardrobeGirls({ companions = null, selfName = '' } = {}) {
+  const roster = companions && typeof companions === 'object' && Object.keys(companions).length ? companions : null;
+  if (!roster) return WARDROBE_GIRLS.map((g) => ({ ...g }));
+  const mates = Object.values(roster)
+    .filter((c) => c && c.id && String(c.id) !== SELF_GIRL_ID)
+    .map((c) => ({
+      id: String(c.id),
+      name: String(c.name || c.id),
+      emoji: String(c.emoji || ''),
+      // ★ 2026-10-28 评审补：把 COMPANIONS 的别名带过来（"小狐狸/狐狸/GLM/智谱" 都是她）。
+      //   不带的话，群友喊别名就匹配不到人了。
+      aliases: Array.isArray(c.aliases) ? c.aliases.map(String).filter(Boolean) : []
+    }));
+  const selfName0 = String(selfName || '').trim();
+  const self = {
+    id: SELF_GIRL_ID,
+    name: selfName0 || '小鲸鱼',
+    emoji: '🐋',
+    self: true,
+    // ★ 2026-10-28 评审补：显示名可能被换成 persona 的名字（换成 persona 里的名字），
+    //   但群友/模型仍然会说「小鲸鱼」「鲸鱼」—— 这些别名必须留着，否则换名即失联。
+    aliases: ['小鲸鱼', '鲸鱼', ...(selfName0 && selfName0 !== '小鲸鱼' ? ['小鲸鱼'] : [])]
+  };
+  return [self, ...mates];
+}
+
+/**
+ * 某位少女现在**能穿**哪些套。
+ *
+ * ★★ 2026-10-28（用户拍板，第二次改口径）：**服装不再绑角色，改绑世界/地区** ——
+ *    「任何角色都可以自由更换任何服装」。解锁条件仍是"去过那个子区域"（`region|area`），
+ *    衣服本身挂在世界上（`region`/`area`），跟谁能穿无关。
+ *
+ *    所以这里**不再按 `who` 过滤**，直接返回全部。`who` 字段保留，但语义降级为
+ *    **「原型/出处」**（这套最早是照谁的样子做的）——只在衣柜页当一列展示，不参与任何判定。
+ *    这样存档零迁移：`worn[girlId]` 还是"谁现在穿哪套"，只是可穿集合放开。
+ *
+ * @param {string} _girlId 保留参数（调用方不必改），现在不影响结果
+ * @param {{companions?:object}} [_opts] 保留（旧调用方传了也无害）
+ */
+export function outfitsFor(_girlId, _opts = {}) {
+  return OUTFITS.slice();
+}
+
 /**
  * 服装表（**套数看 `.length`，别照抄这里的数字**）。
  *   id     —— 存档里记的键（**英文，别改**：改了就丢已解锁进度）
  *   name   —— 显示名
  *   region —— 地区 id（给"按地区分组"用）
  *   area   —— **子区域名**（解锁判据；必须与 regions.json 逐字一致）
- *   who    —— 谁能穿（少女 id；一人一套，用户点名"不一定每个少女都能穿对应服装"）
+ *   who    —— **【已降级】原型/出处**：这套最早是照谁的样子做的。2026-10-28 起**不再限制谁能穿**
+ *              （用户拍板："任何角色都可以自由更换任何服装"），只在衣柜页当一列展示。
  *   price  —— 亿 TOKEN
  *   wear   —— 换上去的那段提示词（含鞋袜；见文件头 ②）
  */
@@ -422,14 +487,45 @@ export function outfitOf(id) {
   return OUTFITS_BY_ID[String(id || '')] || null;
 }
 
+/**
+ * 展示文案 / 生图提示词**分开取**（2026-10-28 起支持）。
+ *
+ * 为什么要拆：`wear` 是"给人看 + 喂给生图"混用的一段中文 —— 想改一句展示文案
+ * 就会连带改画面。以后每套可以额外写一个 `text`（只给人看）和一个 `tags`（英文生图 tag），
+ * 缺哪个就回落 `wear`，**所以现有 60 套一字不用改也能继续跑**。
+ *
+ * 现状：60 套目前都只有 `wear`（tags/text 尚未补数据）—— 机制先通，数据后补。
+ *
+ * @param {object|string} o 服装对象或 id
+ * @returns {{display: string, prompt: string, tags: string}}
+ */
+export function outfitCopyOf(o) {
+  const it = typeof o === 'string' ? outfitOf(o) : o;
+  if (!it) return { display: '', prompt: '', tags: '' };
+  const wear = String(it.wear || '').trim();
+  return {
+    display: String(it.text || '').trim() || wear,     // 展示（聊天/面板）
+    prompt: String(it.prompt || '').trim() || wear,     // 生图主提示词
+    tags: String(it.tags || '').trim()                 // 生图附加英文 tag（可空）
+  };
+}
+
 /** 某位少女的服装（她本人的 + 通用）—— 衣柜界面按人列。 */
 export function outfitsOf(girlId) {
   const g = String(girlId || '');
   return OUTFITS.filter((o) => o.who === g);
 }
 
-/** 少女 id → 显示名（衣柜文案用）。 */
-export function girlName(id) {
-  const g = WARDROBE_GIRLS.find((x) => x.id === String(id || ''));
-  return g ? g.name : String(id || '');
+/**
+ * 少女 id → 显示名（衣柜文案用）。
+ * ★ 2026-10-28：支持传入当前名册 —— 换 persona 之后新旅伴也认得出名字，
+ *   不再退化成裸 id。不传就按内置兜底表查（老行为）。
+ */
+export function girlName(id, { companions = null, selfName = '' } = {}) {
+  const key = String(id || '');
+  const list = (companions && typeof companions === 'object' && Object.keys(companions).length)
+    ? wardrobeGirls({ companions, selfName })
+    : WARDROBE_GIRLS;
+  const g = list.find((x) => x.id === key);
+  return g ? g.name : key;
 }

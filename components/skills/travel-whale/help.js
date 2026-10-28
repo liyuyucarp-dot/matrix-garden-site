@@ -28,8 +28,14 @@ import { FOOD_TIERS, CHARM_TYPES, PRICES, COMPANIONS, GARDENS, FARM, pondStats }
 // ★ 2026-10-14 服装系统：衣柜页要用到那张服装表（**现读 `outfits.js`，别在 help.js 里重抄一份**）。
 //   ⚠️ 别再往注释里写死套数 —— 这里原来写"39 套"，v3.0 加到 60 之后就成了假话
 //     （注释也是"信息"，用户会照着它判断代码新旧；见 §98 的"数字漂移"通病）。
-import { OUTFITS, WARDROBE_GIRLS, OUTFIT_REGION_NAMES, OUTFIT_PRICE, outfitOf, girlName } from './outfits.js';
+import { OUTFITS, WARDROBE_GIRLS, wardrobeGirls, OUTFIT_REGION_NAMES, OUTFIT_PRICE, outfitOf, girlName } from './outfits.js';
 import { loadRegions, CARD_LUCK_FACTOR } from './trip.js';
+/** 衣柜名册（从 COMPANIONS 派生；拿不到就回退内置表）—— 2026-10-28 修「衣柜锁角色」 */
+const wardrobeGirlsNow = () => {
+  try { return wardrobeGirls({ companions: COMPANIONS }); } catch { return WARDROBE_GIRLS; }
+};
+
+
 
 /** 说明图存放目录（多实例安全：跟着 DATA_DIR 走）。 */
 export const OUT_DIR = path.join(DATA_DIR, 'skills', 'travel-whale', 'help');
@@ -470,7 +476,7 @@ export function buildWhaleHelpHtml({
       <p>★ <b>👗 服装</b>：跟异世界挂钩 —— 去过某个<b>子区域</b>（她自己去的算，<b>旅伴自己去的也算</b>）
       就能在那儿<b>解锁对应的一套服装</b>（每套 <b>${OUTFIT_PRICE} 亿 TOKEN</b>）。<br>
       ★ 衣柜只登<b>她已经知道的世界</b>里的衣裳 —— 还没去过的地方，连衣服名都不会出现（说"看衣柜"能看全）。<br>
-      买下之后可以<b>手动换装</b>，也可以说一句"随机换一身"让 ${WARDROBE_GIRLS.length} 位少女各自抽一套穿上。
+      买下之后可以<b>手动换装</b>，也可以说一句"随机换一身"让 ${wardrobeGirlsNow().length} 位少女各自抽一套穿上。
       <b>换装只换衣服</b> —— 发色、耳朵、尾巴、以及她们随身的那些东西（小魔王的巨斧、小书虫怀里的书）都不变。
       <!-- ★ 2026-10-15：这里原来报的是"能看到全部 N 套"（现读 OUTFITS.length）——
            衣柜现在只登"她已经知道的世界"那部分，再报总套数就会自相矛盾
@@ -592,7 +598,8 @@ export const MENUS = {
   wardrobe: {
     kind: 'wardrobe', emoji: '👗', title: '服装衣柜',
     subtitle: '跟异世界挂钩：去过哪个子区域，就能在那儿解锁对应的一套服装 —— 她自己去的算，旅伴自己去的也算。'
-      + `每套 ${OUTFIT_PRICE} 亿 TOKEN；买下之后可以随时手动换，也能一句"随机换一身"让 ${WARDROBE_GIRLS.length} 位各自抽一套。`
+      + `每套 ${OUTFIT_PRICE} 亿 TOKEN；买下之后可以随时手动换，也能一句"随机换一身"让 ${wardrobeGirlsNow().length} 位各自抽一套。`
+      + '★ 衣服绑的是**世界**、不绑人：任何一位少女都能穿任何一套。'
       + '换装只换衣服：发色、耳朵、尾巴、以及她们随身的那些东西都不变。',
     closing: '她挑衣服有点慢 —— 因为每一套背后，都是一趟真去过的路。'
   },
@@ -664,7 +671,7 @@ export function wardrobePage({ wardrobe = {}, areasSeen = {}, visibleRegions = n
   //   若这里按可见集算成 0，就会和那行当场自相矛盾（老档尤其明显）。
   const got = OUTFITS.filter(has).length;
 
-  const now = WARDROBE_GIRLS.map((g) => {
+  const now = wardrobeGirlsNow().map((g) => {
     const cur = worn[g.id] ? outfitOf(worn[g.id]) : null;
     return `${g.emoji} ${g.name}${cur ? `：${cur.name}` : '：默认那身'}`;
   }).join('　｜　');
@@ -697,7 +704,6 @@ export function wardrobePage({ wardrobe = {}, areasSeen = {}, visibleRegions = n
           : `<span style="color:#8aa3ba">🔒 要先去「<b>${esc(o.area)}</b>」</span>`);
       return `<tr><td style="font-weight:600">${esc(o.name)}</td>`
         + `<td>${esc(o.area)}</td>`
-        + `<td>${esc(girlName(o.who))}</td>`
         + `<td>${state}</td></tr>`;
     }).join('');
     return `<details open style="margin:9px 0 0">
@@ -705,7 +711,7 @@ export function wardrobePage({ wardrobe = {}, areasSeen = {}, visibleRegions = n
         ${esc(OUTFIT_REGION_NAMES[rid])}
         <span style="color:#8aa3ba;font-weight:400">（${list.length} 套 · 已解锁 ${n}）</span>
       </summary>
-      <table class="tbl"><tr><th style="width:32%">服装</th><th style="width:22%">要去过的子区域</th><th style="width:18%">谁穿</th><th>状态</th></tr>${rows}</table>
+      <table class="tbl"><tr><th style="width:40%">服装</th><th style="width:26%">要去过的子区域</th><th>状态</th></tr>${rows}</table>
     </details>`;
   }).join('');
 
@@ -713,6 +719,7 @@ export function wardrobePage({ wardrobe = {}, areasSeen = {}, visibleRegions = n
       <p class="note" style="margin:0 0 9px">
         <b>一共 ${visibleCount} 套，已解锁 ${got} 套</b> · 每套 <b>${OUTFIT_PRICE} 亿 TOKEN</b>。<br>
         <b>解锁条件 = 去过那个子区域</b>：她自己去的算，<b>旅伴自己去的也算</b>（以前去过的不会追认）。<br>
+        ★ <b>衣服绑的是世界，不绑人</b> —— 任何一位少女都能穿任何一套（"原型"那列只是这套最早照谁的样子做的）。<br>
         ★ 这里只登<b>她已经知道的世界</b>里的衣服 —— 还没去过、也没发现的世界，连衣服名都不会出现。
       </p>
       <p class="note" style="margin:0 0 4px;background:#f4f8fc">现在各穿什么 —　${esc(now)}</p>

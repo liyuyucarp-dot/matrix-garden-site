@@ -50,6 +50,50 @@ import {
 } from './pantry-farm.js';
 import { WHALE_LEGACY, guardHomeOnly } from './tools-core.js';
 
+/**
+ * 衣柜名册（2026-10-28 修「衣柜锁角色」）：**从旅伴名册派生**，不再用 outfits.js 里写死那份。
+ * 权威来源是 `S.COMPANIONS`（可由 `persona/companions.json` 热插拔）+ 她本人的显示名。
+ */
+function girlsNow() {
+  try { return OW.wardrobeGirls({ companions: S.COMPANIONS, selfName: cfg()?.whaleName || '' }); }
+  catch { return OW.wardrobeGirls(); }
+}
+
+/** 少女 id → 显示名（走当前名册，换 persona 后也认得出）。 */
+function girlNameOf(gid) {
+  // ⚠️ 这里必须调 `OW.girlName`（模块里的），不能调同名包装函数 ——
+  //    2026-10-28 批量替换时曾把函数体自己也换成了 `girlNameOf(...)`，变成**自递归**，
+  //    一调用就 RangeError（栈溢出）。评审时抓到的。
+  try { return OW.girlName(gid, { companions: S.COMPANIONS, selfName: cfg()?.whaleName || '' }); }
+  catch { return OW.girlName(gid); }
+}
+
+/**
+ * 按名字/别名找少女（**衣柜里所有"这是谁"都走它**）。
+ *
+ * 2026-10-28 评审补：原来每处都写 `girlsNow().find(x => x.name === q || x.id === q) || …includes…`，
+ * 八处重复且**不认别名**。她本人的显示名又会被 persona 改成 persona 里的名字——
+ * 群友说「给小鲸鱼换身衣服」就匹配不到了。统一收到这里，别名一起匹配。
+ */
+function findGirl(query) {
+  const q = String(query || '').trim();
+  if (!q) return null;
+  const list = girlsNow();
+  const names = (g) => [g.id, g.name, ...(Array.isArray(g.aliases) ? g.aliases : [])]
+    .filter(Boolean).map(String);
+  // ① 精确（含别名）
+  const exact = list.find((g) => names(g).some((n) => n === q));
+  if (exact) return exact;
+  // ② 包含（别名太短（1 字）不参与，避免「鲸」把所有人都吃了）
+  return list.find((g) => names(g).some((n) => n.length >= 2 && (n.includes(q) || q.includes(n)))) || null;
+}
+
+/** 某位少女能穿哪些套（归属者已被 persona 换掉的衣服降级为公用，见 outfits.js）。 */
+function outfitsOfGirl(gid) {
+  try { return OW.outfitsFor(gid, { companions: S.COMPANIONS }); }
+  catch { return OW.outfitsFor(gid); }
+}
+
 export function registerMoreTools(realApi) {
   const ok = (c) => ({ content: String(c) });
   const err = (c) => ({ content: String(c), isError: true });
@@ -522,7 +566,7 @@ export function registerMoreTools(realApi) {
     // ★★ 2026-10-15「探索解锁」：**别报总套数**了 —— 衣柜现在只登"她已经知道的世界"那部分，
     //   说"一共 60 套"而实际只列 0 套会当场自相矛盾（而且"有 60 套"本身也是剧透）。
     description: '看**服装衣柜**：哪些已解锁、哪些能买（得先去那个地方）、'
-      + `${OW.WARDROBE_GIRLS.length} 位少女现在各穿着什么、以及还差哪些没去过。`
+      + `${girlsNow().length} 位少女现在各穿着什么、以及还差哪些没去过。`
       + '⚠️ 衣柜只登**她已经知道的世界**里的衣服 —— 还没去过、也没发现的世界，连衣服名都不出现。'
       + '群友说"看衣柜""有什么衣服""她能穿什么""衣服"时用。',
     parameters: { type: 'object', properties: {} },
@@ -549,13 +593,24 @@ export function registerMoreTools(realApi) {
     id: 'travel-whale__whale_wear', name: '穿衣服', category: 'utility', icon: '👚',
         description: '给某位少女**买下并换上一套**衣服，或**随机换装**。'
       + `⚠️ 得先去过那个地方（她本人去或旅伴去都算），每套 ${OW.OUTFIT_PRICE} 亿 TOKEN；买过的不再收钱、可随时换。`
-      + '群友说「给狐狸穿女仆装」「换身衣服」「随便换一套」时用。每套只绑一位少女。'
-      + '想换回原来那身（默认着装）传 outfit=「默认」——默认那身不在衣柜里，只有这条能回去。',
+      + '群友说「给狐狸穿女仆装」「换身衣服」「随便换一套」「给狐狸戴个草帽」时用。**任何一位少女都能穿任何一套**（衣服绑的是世界，不绑人）。'
+      + '想换回原来那身（默认着装）传 outfit=「默认」——默认那身不在衣柜里，只有这条能回去。'
+      + '头饰单独传 `headwear`、发型单独传 `hair`（都可以不换衣服、只换这一样）。',
     parameters: {
       type: 'object',
       properties: {
-        girl: { type: 'string', description: '给谁穿：小狐狸 / 小白龙 / 小书虫 / 小猫咪 / 小魔王 / 小鲸鱼（她自己）。留空 = 这套绑的那位。' },
+        girl: { type: 'string', description: `给谁穿：${girlsNow().map((x) => x.name).join(' / ')}。留空 = 这套绑的那位 / 只换头饰发型时=她本人。` },
         outfit: { type: 'string', description: '服装名或关键词（比如"巫女服"）。配合 random=true 时可留空。' },
+        headwear: {
+          type: 'string',
+          enum: Object.keys(P.HEADWEAR_STYLES),
+          description: '可选。none=摘掉，default=她原本那件。'
+        },
+        hair: {
+          type: 'string',
+          enum: Object.keys(P.HAIR_STYLES),
+          description: '可选。只换扎法，不动发色长度；default=原来那样。'
+        },
         random: { type: 'boolean', description: 'true = 随机换装：每位少女各自从**已解锁**的里随机抽一套穿上。' }
       }
     },
@@ -565,12 +620,36 @@ export function registerMoreTools(realApi) {
         st.wardrobe = (st.wardrobe && typeof st.wardrobe === 'object') ? st.wardrobe : { owned: {}, worn: {} };
         st.wardrobe.owned = st.wardrobe.owned || {};
         st.wardrobe.worn = st.wardrobe.worn || {};
+        st.wardrobe.headwear = (st.wardrobe.headwear && typeof st.wardrobe.headwear === 'object') ? st.wardrobe.headwear : {};
+        st.wardrobe.hair = (st.wardrobe.hair && typeof st.wardrobe.hair === 'object') ? st.wardrobe.hair : {};
+
+        // ── 头饰 / 发型槽（2026-10-28）：可以单独换，也可以跟换装一起换 ──
+        const hwRaw = String(args?.headwear || '').trim();
+        if (hwRaw && !P.HEADWEAR_STYLES[hwRaw]) {
+          return err(`没有这种头饰。可选：${Object.entries(P.HEADWEAR_STYLES).map(([k, v]) => `${k}（${v.name}）`).join('、')}`);
+        }
+        const hairRaw = String(args?.hair || '').trim();
+        if (hairRaw && !P.HAIR_STYLES[hairRaw]) {
+          return err(`没有这种发型。可选：${Object.entries(P.HAIR_STYLES).map(([k, v]) => `${k}（${v.name}）`).join('、')}`);
+        }
+        const wantOutfitEarly = String(args?.outfit || '').trim();
+        if ((hwRaw || hairRaw) && !wantOutfitEarly && args?.random !== true) {
+          const g = args?.girl ? findGirl(args.girl) : findGirl('小鲸鱼') || girlsNow()[0];
+          if (!g) return err('要给谁换？说个名字。');
+          if (hwRaw) st.wardrobe.headwear[g.id] = hwRaw;
+          if (hairRaw) st.wardrobe.hair[g.id] = hairRaw;
+          S.saveState(st);
+          const bits = [];
+          if (hwRaw) bits.push(`头饰「${P.HEADWEAR_STYLES[hwRaw].name}」`);
+          if (hairRaw) bits.push(`发型「${P.HAIR_STYLES[hairRaw].name}」`);
+          return ok(`💇 ${g.name}换成了${bits.join('、')} —— 下一次拍照就是这身，**不用复述**。`);
+        }
 
         // ① 随机换装 —— 每位各抽一套（没得抽的保持默认）
         if (args?.random === true) {
           const lines = [];
-          for (const g of OW.WARDROBE_GIRLS) {
-            const pool = OW.outfitsOf(g.id).filter((o) => st.wardrobe.owned[o.id] === true);
+          for (const g of girlsNow()) {
+            const pool = outfitsOfGirl(g.id).filter((o) => st.wardrobe.owned[o.id] === true);
             if (!pool.length) {
               delete st.wardrobe.worn[g.id];
               lines.push(`  ${g.emoji} ${g.name}：还没有能换的，保持默认`);
@@ -595,17 +674,15 @@ export function registerMoreTools(realApi) {
         const borrowM = want.match(/^(.+?)的默认/) || want.match(/^default:(\w+)$/i);
         if (borrowM) {
           const wantWho = String(borrowM[1] || '').trim();
-          const src = OW.WARDROBE_GIRLS.find((x) => x.name === wantWho || x.id === wantWho)
-            || OW.WARDROBE_GIRLS.find((x) => x.name.includes(wantWho) || wantWho.includes(x.name));
+          const src = findGirl(wantWho);
           if (!src) {
-            return err(`没有叫「${wantWho}」的少女。可选：${OW.WARDROBE_GIRLS.map((x) => x.name).join('、')}`);
+            return err(`没有叫「${wantWho}」的少女。可选：${girlsNow().map((x) => x.name).join('、')}`);
           }
           const girlRaw = String(args?.girl || '').trim();
           let gid = 'whale';                       // 没说给谁 ⇒ 穿给她自己
           if (girlRaw) {
-            const g = OW.WARDROBE_GIRLS.find((x) => x.name === girlRaw || x.id === girlRaw)
-              || OW.WARDROBE_GIRLS.find((x) => x.name.includes(girlRaw) || girlRaw.includes(x.name));
-            if (!g) return err(`没有叫「${girlRaw}」的少女。可选：${OW.WARDROBE_GIRLS.map((x) => x.name).join('、')}`);
+            const g = findGirl(girlRaw);
+            if (!g) return err(`没有叫「${girlRaw}」的少女。可选：${girlsNow().map((x) => x.name).join('、')}`);
             gid = g.id;
           }
           // ★ 2026-10-17（用户口径）：**借穿要先邀请过那位** —— 没请过的人，
@@ -614,7 +691,7 @@ export function registerMoreTools(realApi) {
             return err(`还没邀请过「${src.name}」—— 先在商店请一位（"请一位伙伴"，见面礼 ${S.COMPANIONS[src.id]?.price ?? '?'} 亿 TOKEN）；`
               + '她答应了，她那身才有得借。');
           }
-          const who = OW.girlName(gid);
+          const who = girlNameOf(gid);
           if (src.id === gid) {
             // 借自己 ⇒ 等同于换回默认
             delete st.wardrobe.worn[gid];
@@ -634,17 +711,18 @@ export function registerMoreTools(realApi) {
           const girlRaw = String(args?.girl || '').trim();
           let targets;
           if (girlRaw) {
-            const g = OW.WARDROBE_GIRLS.find((x) => x.name === girlRaw || x.id === girlRaw)
-              || OW.WARDROBE_GIRLS.find((x) => x.name.includes(girlRaw) || girlRaw.includes(x.name));
-            if (!g) return err(`没有叫「${girlRaw}」的少女。可选：${OW.WARDROBE_GIRLS.map((x) => x.name).join('、')}`);
+            const g = findGirl(girlRaw);
+            if (!g) return err(`没有叫「${girlRaw}」的少女。可选：${girlsNow().map((x) => x.name).join('、')}`);
             targets = [g];
           } else {
-            targets = OW.WARDROBE_GIRLS;          // 没说谁 ⇒ 全部换回默认
+            targets = girlsNow();          // 没说谁 ⇒ 全部换回默认
           }
           const lines = [];
           for (const g of targets) {
             const had = st.wardrobe.worn[g.id];
             delete st.wardrobe.worn[g.id];
+            if (st.wardrobe.headwear) delete st.wardrobe.headwear[g.id];   // 头饰一并回默认
+            if (st.wardrobe.hair) delete st.wardrobe.hair[g.id];           // 发型同
             const hadName = had ? (OW.outfitOf(had)?.name || String(had)) : '';
             lines.push(`  ${g.emoji} ${g.name}：${hadName ? `脱下「${hadName}」，` : ''}换回默认那身`);
           }
@@ -659,15 +737,12 @@ export function registerMoreTools(realApi) {
         const girl = String(args?.girl || '').trim();
         let gid = o.who;
         if (girl) {
-          const g = OW.WARDROBE_GIRLS.find((x) => x.name === girl || x.id === girl)
-            || OW.WARDROBE_GIRLS.find((x) => x.name.includes(girl) || girl.includes(x.name));
-          if (!g) return err(`没有叫「${girl}」的少女。可选：${OW.WARDROBE_GIRLS.map((x) => x.name).join('、')}`);
+          const g = findGirl(girl);
+          if (!g) return err(`没有叫「${girl}」的少女。可选：${girlsNow().map((x) => x.name).join('、')}`);
           gid = g.id;
         }
-        if (gid !== o.who) {
-          return err(`「${o.name}」是**给${OW.girlName(o.who)}的**（每套只绑一位）—— `
-            + `${OW.girlName(gid)}自己的那几套，说"看衣柜"能看到。`);
-        }
+        // ★★ 2026-10-28（用户拍板）：服装**改绑世界/地区**，任何角色都能自由换任何一套 ——
+        //   这里原来那道"这套是给谁的"闸已删。`o.who` 只剩「原型/出处」的展示意义（衣柜页一列）。
 
         // 还没买 ⇒ 先查"去过没"，再扣钱
         if (st.wardrobe.owned[o.id] !== true) {
@@ -683,15 +758,19 @@ export function registerMoreTools(realApi) {
           }
           st.wardrobe.owned[o.id] = true;
           st.wardrobe.worn[gid] = o.id;
+          if (hwRaw) st.wardrobe.headwear[gid] = hwRaw;     // 头饰与换装一起生效（2026-10-28）
+          if (hairRaw) st.wardrobe.hair[gid] = hairRaw;     // 发型同
           S.saveState(st);
-          return ok(`👗 买下「${o.name}」并给${OW.girlName(gid)}换上了`
+          return ok(`👗 买下「${o.name}」并给${girlNameOf(gid)}换上了`
             + `（花 ${price} 亿 TOKEN，余额 ${Number(st.wallet?.plankton) || 0} 亿 TOKEN）。`
             + '下一次拍照就是这身 —— **不用复述衣服的样子**。');
         }
 
         st.wardrobe.worn[gid] = o.id;
+        if (hwRaw) st.wardrobe.headwear[gid] = hwRaw;       // 头饰与换装一起生效（2026-10-28）
+        if (hairRaw) st.wardrobe.hair[gid] = hairRaw;
         S.saveState(st);
-        return ok(`👗 ${OW.girlName(gid)}换上「${o.name}」了 —— 下一次拍照就是这身，`
+        return ok(`👗 ${girlNameOf(gid)}换上「${o.name}」了 —— 下一次拍照就是这身，`
           + '**不用复述衣服的样子**。');
       } catch (error) { return err(`换装失败：${error?.message ?? error}`); }
     }

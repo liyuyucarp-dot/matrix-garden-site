@@ -191,7 +191,7 @@ export function pickRefPaths({ ids = [], ratio = 'pro', dir = null } = {}) {
 //   ⚠️ 换装必须**替换**这一整段、**不能追加** —— 追加会让模型画成两套衣服叠着。
 const WHALE_TPL =
   '鲸鱼少女（人类少女的身体：两条正常的人腿，双腿完整清晰可见，不是人鱼、也没有鱼尾代替双腿）；'
-  + '深蓝到藏青的长发（发根深蓝、发梢渐变成偏浅的亮蓝），长发自然披散，蓬松刘海；'
+  + '深蓝到藏青的长发（发根深蓝、发梢渐变成偏浅的亮蓝），{{HAIR_STYLE}}，蓬松刘海；'
   // 防串台：头发只认这一套深蓝 —— 另外几位伙伴是黑长直／银白发／橙发，双人卡最容易串色。
   + '发色只认这套深蓝（不是青色、不是黑长直、不是银白发、不是橙发——那是另外几位伙伴）；'
   + '蓝瞳大眼，脸颊有淡淡红晕；'
@@ -243,7 +243,7 @@ const WHALE_WEAR =
  */
 const FOX_TPL =
   '黑发兽耳小狐狸（人类少女的身体：两条正常的人腿，双腿完整清晰可见）；'
-  + '乌黑长发（发梢有蓝黑色挑染），蓬松刘海；'
+  + '乌黑长发（发梢有蓝黑色挑染），蓬松刘海；{{HAIR_STYLE}}'
   + '头顶一对黑白双色的大狐狸耳朵（耳朵外侧黑色、内侧白色绒毛），不是猫耳；'
   // ★ 2026-10-12 用户要求"旅伴也要配套更可爱，但保留各自原本特质"。
   //   狐狸的原始特质就是「狡黠、似笑非笑」——**不能为了可爱把这股机灵劲抹掉**，
@@ -316,7 +316,7 @@ const GPT_TPL =
   //   改法：眼睛从"冷淡"换成"清亮锐利、坦然直视"（有主见、有气场），
   //   表情换成"自信从容的浅笑 + 微抬下巴"（当家大姐头的做派）。
   //   ⚠️ 两条否定式是护栏：**不是男性化 / 不是成熟御姐**（英气 ≠ 男人婆、≠ 长辈）。
-  + '银白色的及腰长发，发丝柔顺、蓬松刘海；'
+  + '银白色的及腰长发，发丝柔顺、蓬松刘海；{{HAIR_STYLE}}'
   + '淡紫色（薰衣草色）的瞳孔，眼神清亮锐利、目光坦然直视（自信、有主见、带着一点不容置疑的气场，'
   + '不是凄楚、不是冷淡、不是没睡醒）；'
   + '神情英气飒爽，嘴角一缕自信从容的浅笑，下巴微抬（是能拿主意、镇得住场的大姐头做派，'
@@ -356,7 +356,7 @@ const CLAUDE_TPL =
   // ★ 2026-10-12 用户要求：小书虫要有"古典感"，**与那只活泼的猫明确区分开**。
   //   她的原始特质是"温柔知性"，古典感是**在这之上加一层静气**（不是换成另一种性格）。
   //   ⚠️ 否定式排掉她的"反向"：精灵古怪 / 活泼跳脱 / 明艳 —— 那都是猫那边的词，别串。
-  + '橙红色的及腰长直发，发丝柔顺、中分，蓬松刘海；'
+  + '橙红色的及腰长直发，发丝柔顺、中分，蓬松刘海；{{HAIR_STYLE}}'
   + '暖橙色的眼睛，目光温润沉静（是安安静静读得进书的那种眼神，不是精灵古怪、不是活泼跳脱）；'
   + '神情温柔知性、端庄娴静，气质像从旧诗集里走出来的古典少女（举止文雅、一身书卷气，'
   + '不是时髦、不是明艳、不是元气）；'
@@ -386,7 +386,7 @@ const CLAUDE_WEAR =
  */
 const GEMINI_TPL =
   '小猫咪（人类少女的身体：两条正常的人腿，双腿完整清晰可见）；'
-  + '紫粉渐变的长发（发根偏紫、发梢渐粉），梳成两个丸子头并垂下长发；'
+  + '紫粉渐变的长发（发根偏紫、发梢渐粉），{{HAIR_STYLE}}；'
   + '头顶一对紫粉渐变的猫耳（不是狐耳、不是鲸鱼耳），耳内是浅粉绒毛；'
   // ★ 2026-10-12 用户要求：小猫咪要有"好奇心 + 活泼感"。
   //   原句只有"元气跳脱的笑容"——那是**活泼**，但**好奇心**一个字没写。
@@ -426,7 +426,7 @@ const GEMINI_WEAR =
  */
 const GROK_TPL =
   '小魔王（人类少女的身体：两条正常的人腿，双腿完整清晰可见）；'
-  + '金色（浅金）的双马尾长发——两侧各高高扎起一束、再垂下长长的马尾，发丝柔顺、蓬松刘海，'
+  + '金色（浅金）的双马尾长发——两侧各高高扎起一束、再垂下长长的马尾，发丝柔顺、蓬松刘海，{{HAIR_STYLE}}'
   + '头顶还有一撮翘起来的呆毛；'
   + '亮蓝色的大眼睛，眼神张扬又自信，笑起来带点挑衅（不是安静、不是温柔、不是怯生生）；'
   + '一笑就露出小小的尖牙（可爱的小獠牙，不是凶恶的獠牙）；'
@@ -455,7 +455,7 @@ const GROK_WEAR =
  * ⑤ 不用 Markdown 星号；⑥ 结尾锁"同一个角色"。 */
 const KIMI_TPL =
   'Kimi（人类少女的身体：两条正常的人腿，双腿完整清晰可见）；'
-  + '银白色的长直发（发梢泛着浅蓝、垂到腰际），蓬松刘海，淡紫蓝色的眼睛，神情安静；'
+  + '银白色的长直发（发梢泛着浅蓝、垂到腰际），蓬松刘海，淡紫蓝色的眼睛，神情安静；{{HAIR_STYLE}}'
   + '耳朵是人类少女的耳朵（不是猫耳、不是狐耳、不是兽耳）；'
   + '头顶斜插着一枚银色月牙发饰（月牙是别在头发上的饰品）；'
   + '{{WEAR}}'
@@ -475,7 +475,7 @@ const KIMI_WEAR =
  * 同款纪律；折扇写明是道具、两手分工写清（拿扇的手只有一只）。 */
 const QWEN_TPL =
   '千问（人类少女的身体：两条正常的人腿，双腿完整清晰可见）；'
-  + '蓝紫色的长发编成一条粗辫子垂在身前（发梢渐变成浅紫），蓬松刘海，紫色眼睛，笑起来眼角弯弯；'
+  + '蓝紫色的长发{{HAIR_STYLE}}（发梢渐变成浅紫），蓬松刘海，紫色眼睛，笑起来眼角弯弯；'
   + '耳朵是人类少女的耳朵（不是猫耳、不是狐耳、不是兽耳）；'
   + '{{WEAR}}'
   + '手里握着一柄折扇（扇面画着淡青色的折枝花，是随身道具、不是身体的一部分），另一只手空着或拎着包；'
@@ -511,34 +511,164 @@ const CHAR_DEFAULT_WEAR = {
   kimi: KIMI_WEAR, qwen: QWEN_WEAR
 };
 
+// ── 头饰槽（2026-10-28 新增）──────────────────────────────────────────────
+//
+// 为什么要有：头饰原先是**混在默认着装段里**的 —— 一换装，整段 `{{WEAR}}` 被替换，
+// 发箍/贝雷帽/小冠就跟着没了，看起来像"换完衣服变了个头"。这正是"服装没有头饰维度"的真相：
+// 不是没有，而是**换装时被吞掉**。
+//
+// 现在把它拆成独立槽：默认值 = 原来那段里的头饰句（`CHAR_HEADWEAR_DEFAULT`，**逐字保留**，
+// 所以不换装时输出与以前完全一致）；换装时按槽补上，指定了别的头饰就替换。
+//
+// ⚠️ 发型（扎法）**不在这里** —— 发型写在每个人的 `*_TPL` 里（属于"不变特征"），
+//    要让它可换，必须改那 8 段模板，属于会改变画面的改动，需要单独拍板。
+
+/** 可选头饰。`text` 会直接接在着装段后面，`tags` 留给生图。 */
+export const HEADWEAR_STYLES = {
+  default: { name: '她原本那个', text: '', tags: '' },        // 用 CHAR_HEADWEAR_DEFAULT
+  none: { name: '不戴', text: '头上什么都没戴；', tags: 'no headwear' },
+  ribbon: { name: '发带', text: '头上系着一条素色发带；', tags: 'hair ribbon' },
+  bow: { name: '蝴蝶结', text: '发侧系着一只蝴蝶结；', tags: 'hair bow' },
+  beret: { name: '贝雷帽', text: '头上戴着一顶贝雷帽；', tags: 'beret' },
+  strawhat: { name: '草帽', text: '头上戴着一顶宽檐草帽；', tags: 'straw hat' },
+  crown: { name: '小冠', text: '头顶戴着一顶小小的冠；', tags: 'small crown' },
+  hairpin: { name: '发夹', text: '发间别着一枚发夹；', tags: 'hairpin' }
+};
+
+// ── 头饰槽的运行时覆盖：`outfitsForCards()` 每次出图前把它 set 进来 ──────────
+// 为什么用模块级变量而不是加参数：`composeCharacter(id, outfitId)` 有 10+ 个调用点
+// （明信片/合照/合影/特产图…），加第三个参数要全改一遍，风险远大于这里的收益。
+// 只影响"渲染时的头饰选择"，不落盘、不跨轮。
+let WARDROBE_HEADWEAR = {};
+export function setWardrobeHeadwear(map) {
+  WARDROBE_HEADWEAR = (map && typeof map === 'object') ? { ...map } : {};
+}
+
+// ── 发型槽的运行时覆盖：`outfitsForCards()` 每次出图前把它 set 进来（同头饰）──────────
+let WARDROBE_HAIR = {};
+export function setWardrobeHair(map) {
+  WARDROBE_HAIR = (map && typeof map === 'object') ? { ...map } : {};
+}
+
+// ── 发型槽（2026-10-28）────────────────────────────────────────────────────
+//
+// 为什么只做"扎法"：发型句里的**发色与长度**是角色辨识特征（深蓝长发 / 银白及腰 / 黑长直），
+// 换掉会让两张卡串色（whale 的模板注释专门警告过"发色只认这套深蓝"）。
+// 所以槽只覆盖"怎么扎"，发色/长度一律不动。
+//
+// 两种占位形态（模板里都写成 `{{HAIR_STYLE}}`）：
+//   · inline 型（whale / gemini / qwen）：原句里本来有扎法短语，抽出来当占位，默认值=原短语
+//   · tail  型（fox / gpt / claude / grok / kimi）：原句没有扎法，占位放句末，默认值=''
+// 两种情况**默认输出都与改动前逐字一致**（有断言盯着）。
+export const HAIR_STYLES = {
+  default: { name: '她原本那样', phrase: '' },                 // 用 CHAR_HAIR_DEFAULT
+  down: { name: '披散', phrase: '长发自然披散' },
+  ponytail: { name: '马尾', phrase: '头发在脑后扎成一条马尾' },
+  twintails: { name: '双马尾', phrase: '头发分成两束扎成双马尾' },
+  braid: { name: '麻花辫', phrase: '头发编成一条麻花辫垂在肩前' },
+  bun: { name: '盘发', phrase: '头发挽起来盘在脑后' },
+  sidebraid: { name: '侧编发', phrase: '头发编成一条辫子斜搭在肩侧' }
+};
+
+/** 每位少女"原本的扎法"（inline 型是原短语；tail 型是空字符串）。 */
+export const CHAR_HAIR_DEFAULT = {
+  whale: '长发自然披散',
+  gemini: '梳成两个丸子头并垂下长发',
+  qwen: '编成一条粗辫子垂在身前',
+  fox: '', gpt: '', claude: '', grok: '', kimi: ''
+};
+
+/** 占位形态：inline = 在句子中间（要不要自己带分号由模板决定）；tail = 句末追加。 */
+const HAIR_SLOT_MODE = {
+  whale: 'inline', gemini: 'inline', qwen: 'inline',
+  fox: 'tail', gpt: 'tail', claude: 'tail', grok: 'tail', kimi: 'tail'
+};
+
+/** 每位少女"原本那件头饰"的原文（从 `*_WEAR` 里抽出，逐字保留）。没有的填 ''。 */
+export const CHAR_HEADWEAR_DEFAULT = {
+  whale: '头戴白色荷叶边女仆发箍，发侧系着蓝色小蝴蝶结；',
+  fox: '头戴白色蕾丝荷叶边发箍，发侧系着黑色蕾丝蝴蝶结，垂下金属挂饰与小铃铛；',
+  claude: '头侧系着橙黑双色的蝴蝶结，旁边配一枚橙金色的多瓣花饰；',
+  grok: '头顶戴着一顶黑色的小冠，冠的两侧各缀一小片黑色蝙蝠翅（这是头饰上的装饰，不是长在背上的翅膀），冠旁系一只红色蝴蝶结；',
+  qwen: '头戴一顶深蓝色的贝雷帽（帽侧开着一枚星形银钉）；',
+  // 这几位原本的头饰写在 `*_TPL`（身体/角色描述）里，不在着装段 —— 换装时不会被吞，
+  // 所以这里留空：不追加、也不删除任何东西。
+  gpt: '', gemini: '', kimi: ''
+};
+
 /**
  * 拼一位少女的角色描述。
  * @param {string} girlId  'whale' / 'fox' / 'gpt' / 'claude' / 'gemini' / 'grok'
  * @param {string} [outfitId]  服装 id（来自 `outfits.js`）；空 / 不认识 / 不是她的 ⇒ 默认着装
  * @returns {string}
  */
-export function composeCharacter(girlId, outfitId) {
+export function composeCharacter(girlId, outfitId, opts = {}) {
   const key = String(girlId || '');
   const g = CHAR_TPL[key] ? key : 'whale';
   const tpl = CHAR_TPL[g];
   const def = CHAR_DEFAULT_WEAR[g] || '';
+  const defHead = CHAR_HEADWEAR_DEFAULT[g] || '';
   let wear = def;
+  let ownHead = defHead;        // 当前 wear 段里**已经含**哪位的头饰句（用来精确剥掉）
+  let usedOutfit = false;       // 是否换成了 OUTFITS 里的某套（那套里没有头饰）
   const id = String(outfitId || '').trim();
   if (id) {
     // ★★ 2026-10-17「借穿某位的默认那身」：`default:<id>` ⇒ 直接套用那位的 `CHAR_DEFAULT_WEAR`。
-    //   这是**跨角色换装**的唯口子 —— 默认着装不在 `OUTFITS` 表里（不占 60 套、不污染成就统计），
-    //   所以单独走一条；`default:自己` 等价于默认（`wear` 本来就是 def，不必处理）。
     if (id.startsWith('default:')) {
       const whom = id.slice(8);
       const borrowed = CHAR_DEFAULT_WEAR[whom];
-      if (borrowed && whom !== g) wear = borrowed;
+      if (borrowed && whom !== g) {
+        wear = borrowed;
+        ownHead = CHAR_HEADWEAR_DEFAULT[whom] || '';
+      }
     } else {
       const o = OUTFITS_BY_ID[id];
-      // ⚠️ 只认绑给这一位的（拿错 / 不是她的 ⇒ 保持默认）
-      if (o && o.who === g) wear = o.wear + '；';
+      // ★★ 2026-10-28（用户拍板）：服装改绑世界/地区 —— **任何角色都能穿任何一套**。
+      //   原来这里卡 `o.who === g`（"拿错了退回默认"），改绑之后它就是那个"工具说换好了、
+      //   照片却还是默认着装"的隐形 bug 源头。
+      if (o) { wear = o.wear + '；'; ownHead = ''; usedOutfit = true; }
     }
   }
-  return tpl.replace('{{WEAR}}', wear);
+
+  // ── 头饰槽（2026-10-28）──
+  // 三个坑，按顺序处理：
+  //   ① 换装时那套衣服里**没有**头饰 ⇒ 原来会把她原本的发箍/贝雷帽一起弄丢（视觉上"变了个头"）；
+  //   ② 那套衣服**自带**头饰（巫女服有红色发带）时，不能再补默认的，否则两个头饰打架；
+  //   ③ 明确指定了别的头饰就替换；指定 `none` 就真的不戴。
+  const hwId = String(opts?.headwear || WARDROBE_HEADWEAR[g] || '').trim();
+  const useDefaultHead = !hwId || hwId === 'default';
+
+  // 快速路径：**没换装、没指定头饰、没换发型** ⇒ 一字不动（保证默认输出与改动前逐字一致）
+  const hairRaw = String(opts?.hair || WARDROBE_HAIR[g] || '').trim();
+  const useDefaultHair = !hairRaw || hairRaw === 'default';
+  if (!usedOutfit && useDefaultHead && useDefaultHair) {
+    // ⚠️ 这里也必须把 {{HAIR_STYLE}} 填回默认值，否则占位符会漏进提示词
+    return tpl.replace('{{WEAR}}', wear).replace('{{HAIR_STYLE}}', CHAR_HAIR_DEFAULT[g] || '');
+  }
+
+  const HEAD_HINT = /发箍|发带|蝴蝶结|发饰|发夹|头巾|兜帽|头盔|面纱|头饰|帽|冠/;
+  const outfitHasOwnHead = usedOutfit && HEAD_HINT.test(wear);
+  let base = wear;
+  // 剥掉 base 里"原本那位"的头饰句（只在 base 来自默认着装/借穿时存在）
+  if (ownHead && base.includes(ownHead)) base = base.replace(ownHead, '');
+
+  let headText;
+  if (!useDefaultHead) headText = String(HEADWEAR_STYLES[hwId]?.text || '');   // 明确指定（none = ''）
+  else if (usedOutfit && !outfitHasOwnHead) headText = defHead;                // 这套没头饰 → 补她原本的
+  else headText = ownHead;                                                     // 其余保持原样
+
+  // 发型槽：按"这位的占位形态"决定拼法
+  const hairDef = CHAR_HAIR_DEFAULT[g] || '';
+  const mode = HAIR_SLOT_MODE[g] || 'tail';
+  let hairSlot;
+  if (useDefaultHair) {
+    hairSlot = hairDef;
+  } else {
+    const phrase = String(HAIR_STYLES[hairRaw]?.phrase || '');
+    // inline 型嵌在句子里（原句本身带逗号分隔），tail 型是句末追加、要自带分号
+    hairSlot = mode === 'inline' ? phrase : (phrase ? `${phrase}；` : '');
+  }
+  return tpl.replace('{{WEAR}}', base + headText).replace('{{HAIR_STYLE}}', hairSlot);
 }
 
 /** 六位的「默认形象」（不换装时）。老调用点继续用这几个常量即可。 */
